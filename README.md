@@ -299,7 +299,6 @@ When working with Open5GS SMF, add the following settings to `smf.yaml`.
 `smf.yaml`
 ```
 global:
-...
   parameter:
     use_upg_vpp: true
 ```
