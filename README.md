@@ -127,7 +127,7 @@ And, I have created a [patch](https://github.com/s5uishida/install_oai_upf/blob/
 3GPP TS 29.244 Table 7.5.2.3-2: Forwarding Parameters IE in FAR
 ```
 ```
-# wget https://github.com/s5uishida/install_oai_upf/raw/refs/heads/main/patches/common-src_3gpp_interface_type.patch
+# wget https://raw.githubusercontent.com/s5uishida/install_oai_upf/refs/heads/main/patches/common-src_3gpp_interface_type.patch
 ```
 
 <a id="clone"></a>
