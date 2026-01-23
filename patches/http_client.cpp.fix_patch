@@ -1,0 +1,17 @@
+--- http_client.cpp.orig	2026-01-23 19:19:16.185153814 +0900
++++ http_client.cpp	2026-01-23 19:19:41.138374433 +0900
+@@ -331,14 +331,8 @@
+ }
+ 
+ //---------------------------------------------------------------------------------------------
+-<<<<<<< HEAD
+ request http_client::prepare_json_request(
+     const std::string& uri, const std::string& body) {
+-=======
+-request http_client::prepare_json_request(const std::string &uri,
+-                                          const std::string &body,
+-                                          const std::string &content_type) {
+->>>>>>> e16536ad (fix clang-12 formatting issues)
+   request req;
+   req.uri = uri;
+   // Check whether body is valid JSON

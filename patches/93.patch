@@ -1,0 +1,132 @@
+diff --git a/build/common-build b/build/common-build
+index bd36b5c7ee802984c6948e61b8815afbbc63d42e..6b71d9c09dff39b82be79a64b608fba92c294d6e 160000
+--- a/build/common-build
++++ b/build/common-build
+@@ -1 +1 @@
+-Subproject commit bd36b5c7ee802984c6948e61b8815afbbc63d42e
++Subproject commit 6b71d9c09dff39b82be79a64b608fba92c294d6e
+diff --git a/build/scripts/build_helper.upf b/build/scripts/build_helper.upf
+index 119e43d90521b4e2a5ef839ba6c2fc0f5a0d749a..5403fee70bcf4acaeca4dc3de97dd80b04c9cc5f 100644
+--- a/build/scripts/build_helper.upf
++++ b/build/scripts/build_helper.upf
+@@ -300,6 +300,9 @@ check_install_upf_deps() {
+       "ubuntu20.04")
+         specific_packages="libconfig++-dev libasio-dev libboost-all-dev libasan5"
+         ;;
++      "ubuntu24.04")
++        specific_packages="libconfig++-dev libasio-dev libboost-all-dev libasan8"
++        ;;
+       *)
+         specific_packages="libconfig++-dev libasio-dev libboost-all-dev libasan?"
+         ;;
+@@ -418,6 +421,12 @@ check_install_upf_deps() {
+         install_libyaml_cpp_from_git $1 $2
+         ret=$?;[[ $ret -ne 0 ]] && return $ret
+         ;;
++      "ubuntu24.04")
++        # probably 0.8.0
++        #$SUDO $INSTALLER install $OPTION libyaml-cpp0.8 libyaml-cpp-dev
++        install_libyaml_cpp_from_git $1 $2
++        ret=$?;[[ $ret -ne 0 ]] && return $ret
++        ;;
+     esac
+   elif [[ "$OS_BASEDISTRO" == "fedora" ]]; then
+     # definitely, 0.6.2 as PPA installed is not enough
+@@ -523,8 +532,9 @@ get_distribution_release() {
+ 
+ check_platform_for_lttng() {
+   local distribution=$(get_distribution_release)
+-  if [[ "$distribution" == "ubuntu18.04" || "$distribution" == "ubuntu20.04" || "$distribution" == "ubuntu22.04" ]]; then
++  if [[ "$distribution" == "ubuntu18.04" || "$distribution" == "ubuntu20.04" || "$distribution" == "ubuntu22.04" || "$distribution" == "ubuntu24.04" ]]; then
+       return 1
+   fi
+   return 0
+-}
+\ No newline at end of file
++}
++
+diff --git a/docker/Dockerfile.upf.ubuntu b/docker/Dockerfile.upf.ubuntu
+index 82112eb26865430d6a589ca193283028b976bec9..88254482578e13028ce21a56061788d615b7ab9c 100644
+--- a/docker/Dockerfile.upf.ubuntu
++++ b/docker/Dockerfile.upf.ubuntu
+@@ -29,7 +29,7 @@
+ #---------------------------------------------------------------------
+ # BASE IMAGE
+ #---------------------------------------------------------------------
+-ARG BASE_IMAGE=ubuntu:jammy
++ARG BASE_IMAGE=ubuntu:noble
+ FROM $BASE_IMAGE AS oai-upf-base
+ 
+ ENV DEBIAN_FRONTEND=noninteractive
+@@ -66,6 +66,23 @@ RUN ./build_upf --install-deps --force
+ FROM oai-upf-base AS oai-upf-builder
+ # Copy the rest of source code
+ COPY . /openair-upf
++
++
++# Remove the deprecated NPN argument to add support for Ubuntu 24.04
++RUN sed -i \
++  's/cpr::ssl::ALPN{false}, cpr::ssl::NPN{false}/cpr::ssl::ALPN{false}/g' \
++  /openair-upf/src/common-src/http/http_client.cpp
++
++# Ubuntu 24.04 - <cstdint> is no longer implicitly included by standard headers
++RUN sed -i '1i #include <cstdint>' \
++  /openair-upf/src/common-src/utils/fqdn.hpp
++
++RUN sed -i '1i #include <cstdint>' \
++  /openair-upf/src/common-src/utils/output_wrapper.hpp
++
++RUN sed -i '1i #include <cstdint>' \
++  /openair-upf/src/common-src/utils/mime_parser.hpp
++
+ # Building UPF
+ WORKDIR /openair-upf/build/scripts
+ ARG BUILD_ARGS=""
+@@ -111,12 +128,14 @@ RUN apt-get update && \
+       netbase \
+ # Ubuntu 20 --> libasan5
+ # Ubuntu 22 --> libasan6
++# Ubuntu 24 --> libasan8
+ #      libasan? \
+       libgssapi-krb5-2 \
+ # Ubuntu 20 --> libldap-2.4-2
+ # Ubuntu 22 --> libldap-2.5-0
++# Ubuntu 24 --> libldap-2.6-7
+       libldap-2.?-? \
+-      libgoogle-glog0v5 \
++      libgoogle-glog0v6 \
+       libdouble-conversion3 \
+       libconfig++9v5 \
+       librtmp1 \
+@@ -125,7 +144,8 @@ RUN apt-get update && \
+       libcurl?-gnutls \
+ # Ubuntu 20 --> boost71
+ # Ubuntu 22 --> boost74
+-      libboost-thread1.7?.0 \
++# Ubuntu 24 --> boost83
++      libboost-thread1.83.0 \
+ # lttng
+   && if [ "$ENABLE_LTTNG" = "true" ]; then DEBIAN_FRONTEND=noninteractive apt-get install --yes liblttng-ust-dev; fi \
+   && rm -rf /var/lib/apt/lists/*
+@@ -144,11 +164,11 @@ WORKDIR /usr/local/lib
+ COPY --from=oai-upf-builder \
+     /usr/local/lib/libfmt.so \
+     /usr/local/lib/libyaml-cpp.so.0.? \
+-    /usr/local/lib/libcpr.so.1 \    
++    /usr/local/lib/libcpr.so.1* \
+ # Ubuntu 20 --> libbfd-2.34
+ # Ubuntu 22 --> libbfd-2.38
+-    /usr/lib/?-linux-gnu/libbfd-2.3?-system.so \
+-    /usr/lib/?-linux-gnu/libopcodes-2.3?-system.so \
++    /usr/lib/?-linux-gnu/libbfd-2.*?-system.so \
++    /usr/lib/?-linux-gnu/libopcodes-2.*?-system.so \
+     /openair-upf/build/ext/libbpf/src/libbpf.so.1 \
+     # /openair-upf/build/upf/build/upf_app/utils/libupfutils.so \
+     ./
+@@ -189,4 +209,4 @@ HEALTHCHECK --interval=10s \
+ 
+ CMD ["/openair-upf/bin/oai_upf", "-c", "/openair-upf/etc/config.yaml", "-o"]
+ 
+-ENTRYPOINT [ "sh", "/openair-upf/bin/entrypoint.sh" ]
+\ No newline at end of file
++ENTRYPOINT [ "sh", "/openair-upf/bin/entrypoint.sh" ]
