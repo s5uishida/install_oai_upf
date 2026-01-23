@@ -103,6 +103,10 @@ I simply confirmed the operation of the following versions.
 ```
 # apt install arping
 ```
+If you want to use `xdpdump` command, install `xdp-tools` package.
+```
+# apt install xdp-tools
+```
 
 <a id="get_patch"></a>
 
