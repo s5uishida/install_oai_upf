@@ -172,7 +172,7 @@ Download and change to tag `v2.2.0`.
 # cd src/common-src
 # git reset --hard 8e687109d80c07f1a775d753806f208028987116
 # cd http
-# patch http_client.cpp < ~/http_client.cpp.fix_patch
+# patch http_client.cpp < ~/http_client.cpp.fix.patch
 ```
 
 <a id="apply_patch_open5gs_free5gc"></a>
