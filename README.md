@@ -451,14 +451,14 @@ The link status of the network interfaces N3(ens20) and N6(ens22) is as follows.
 ```
 # ip link show
 ...
-4: ens20: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 xdp qdisc htb state UP mode DEFAULT group default qlen 1000
+4: ens20: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 xdp qdisc fq_codel state UP mode DEFAULT group default qlen 1000
     link/ether bc:24:11:c2:c1:38 brd ff:ff:ff:ff:ff:ff
-    prog/xdp id 163 
+    prog/xdp id 26 
     altname enp0s20
 ...
 6: ens22: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 xdp qdisc fq_codel state UP mode DEFAULT group default qlen 1000
     link/ether bc:24:11:98:5b:e1 brd ff:ff:ff:ff:ff:ff
-    prog/xdp id 165 
+    prog/xdp id 28 
     altname enp0s22
 ...
 ```
