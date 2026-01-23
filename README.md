@@ -139,7 +139,7 @@ Also get the patches to build on Ubuntu 24.04.
 
 - fix the issue in [fix clang-12 formatting issues](https://gitlab.eurecom.fr/oai/cn5g/oai-cn5g-common-src/-/commit/8e687109d80c07f1a775d753806f208028987116)
   ```
-  # wget https://raw.githubusercontent.com/s5uishida/install_oai_upf/refs/heads/main/patches/http_client.cpp.fix_patch
+  # wget https://raw.githubusercontent.com/s5uishida/install_oai_upf/refs/heads/main/patches/http_client.cpp.fix.patch
   ```
 
 <a id="clone"></a>
