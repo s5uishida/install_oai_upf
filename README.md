@@ -19,6 +19,8 @@ This briefly describes the steps and configuration to build and install [OAI-CN5
   - [Install required packages](#install_pkg)
   - [Get patches](#get_patch)
   - [Clone OAI-CN5G-UPF](#clone)
+  - [Prepare to build on Ubuntu 24.04](#prepare_build_on_u24)
+  - [Apply the patches required to work with Open5GS and free5GC SMF](#apply_patch_open5gs_free5gc)
   - [Build and Install OAI-CN5G-UPF](#build_install)
 - [Setup OAI-CN5G-UPF on VM-UP](#setup_up)
   - [Create configuration file](#conf)
@@ -51,7 +53,7 @@ The eBPF/XDP UPF used is as follows.
 Each VMs are as follows.  
 | VM | SW & Role | IP address | OS | CPU<br>(Min) | Mem<br>(Min) | HDD<br>(Min) |
 | --- | --- | --- | --- | --- | --- | --- |
-| VM-UP | OAI-CN5G-UPF U-Plane | 192.168.0.151/24 | Ubuntu 22.04 | 1 | 6GB | 20GB |
+| VM-UP | OAI-CN5G-UPF U-Plane | 192.168.0.151/24 | Ubuntu 24.04 | 1 | 6GB | 20GB |
 | VM-DN | Data Network Gateway  | 192.168.0.152/24 | Ubuntu 24.04 | 1 | 1GB | 10GB |
 
 The network interfaces of each VM are as follows.
@@ -128,6 +130,18 @@ And get a patch that fixes the missing IEs for QoS. This patch enables PFCP comm
   # wget https://gitlab.eurecom.fr/oai/cn5g/oai-cn5g-common-src/-/commit/bc761a86ad5e22ecaac74498e36114dc59698798.diff -O fix_upf_qos_missing_ie.patch
   ```
 
+Also get the patches to build on Ubuntu 24.04.
+
+- [Add support for Ubuntu 24.04 in UPF](https://gitlab.eurecom.fr/oai/cn5g/oai-cn5g-upf/-/merge_requests/93)
+  ```
+  # wget https://gitlab.eurecom.fr/oai/cn5g/oai-cn5g-upf/-/merge_requests/93.diff -O 93.patch
+  ```
+
+- fix the issue in [fix clang-12 formatting issues](https://gitlab.eurecom.fr/oai/cn5g/oai-cn5g-common-src/-/commit/8e687109d80c07f1a775d753806f208028987116)
+  ```
+  # wget https://raw.githubusercontent.com/s5uishida/install_oai_upf/refs/heads/main/patches/http_client.cpp.fix_patch
+  ```
+
 <a id="clone"></a>
 
 ### Clone OAI-CN5G-UPF
@@ -138,18 +152,33 @@ Download and change to tag `v2.2.0`.
 # git clone https://gitlab.eurecom.fr/oai/cn5g/oai-cn5g-upf.git
 # cd oai-cn5g-upf
 # git checkout refs/tags/v2.2.0
+# git submodule update --init --recursive
 ```
 
-<a id="build_install"></a>
+<a id="prepare_build_on_u24"></a>
 
-### Build and Install OAI-CN5G-UPF
+### Prepare to build on Ubuntu 24.04
 
-First, check installed software necessary to build and run UPF.
+| Repository | Commit & Date | Title |
+| --- | --- | --- |
+| common-build | `6b71d9c09dff39b82be79a64b608fba92c294d6e`<br>2026.01.14 | [fix(build): resolve folly compilation errors for UPF Build - Ubuntu 24.04 support](https://gitlab.eurecom.fr/oai/cn5g/oai-cn5g-common-build/-/commit/6b71d9c09dff39b82be79a64b608fba92c294d6e) |
+| common-src | `8e687109d80c07f1a775d753806f208028987116`<br>2026.01.15 | [fix clang-12 formatting issues](https://gitlab.eurecom.fr/oai/cn5g/oai-cn5g-common-src/-/commit/8e687109d80c07f1a775d753806f208028987116) |
+
 ```
-# cd ~/oai-cn5g-upf/build/scripts
-# ./build_upf -I -f
+# cd ~/oai-cn5g-upf/build/common-build
+# git reset --hard 6b71d9c09dff39b82be79a64b608fba92c294d6e
+# cd ~/oai-cn5g-upf
+# patch -p1 < ~/93.patch
+# cd src/common-src
+# git reset --hard 8e687109d80c07f1a775d753806f208028987116
+# cd http
+# patch http_client.cpp < ~/http_client.cpp.fix_patch
 ```
-And, apply the patches downloaded.
+
+<a id="apply_patch_open5gs_free5gc"></a>
+
+### Apply the patches required to work with Open5GS and free5GC SMF
+
 ```
 # cd ~/oai-cn5g-upf
 # patch -p1 < ~/85.patch
@@ -158,9 +187,15 @@ And, apply the patches downloaded.
 # patch -p1 < ~/measurement-ie.patch
 # patch -p1 < ~/fix_upf_qos_missing_ie.patch
 ```
-Then, build and Install OAI-CN5G-UPF
+
+<a id="build_install"></a>
+
+### Build and Install OAI-CN5G-UPF
+
+First, check installed software necessary to build and run UPF. Then, build and Install OAI-CN5G-UPF.
 ```
 # cd ~/oai-cn5g-upf/build/scripts
+# ./build_upf -I -f
 # ./build_upf -c -V -b Release -j
 # cp ~/oai-cn5g-upf/etc/config.yaml /usr/local/etc/oai/config.yaml.orig
 # echo "/usr/lib64" >> /etc/ld.so.conf.d/libbpf.conf
@@ -315,115 +350,115 @@ Then run UPF.
 # upf -c config.yaml -o
 Trying to read .yaml configuration file: config.yaml
 LTTNG Tracing disabled at build-time!
-[2026-01-22 19:00:35.225] [upf_app] [start] Options parsed
-[2026-01-22 19:00:35.225] [config ] [info] Reading NF configuration from config.yaml
-[2026-01-22 19:00:35.230] [config ] [debug] Validating configuration of log_level
-[2026-01-22 19:00:35.234] [config ] [info] Basic Configuration:
-[2026-01-22 19:00:35.234] [config ] [info]   - log_level..................................: info
-[2026-01-22 19:00:35.234] [config ] [info]   - register_nf................................: No
-[2026-01-22 19:00:35.234] [config ] [info]   - http_version...............................: 2
-[2026-01-22 19:00:35.234] [config ] [info]   TLS:
-[2026-01-22 19:00:35.234] [config ] [info]     - Enable TLS.................................: No
-[2026-01-22 19:00:35.234] [config ] [info]   - HTTP Request Timeout.......................: 3000 (ms)
-[2026-01-22 19:00:35.234] [config ] [info] UPF Configuration:
-[2026-01-22 19:00:35.234] [config ] [info]   - host.......................................: 192.168.14.151
-[2026-01-22 19:00:35.234] [config ] [info]   - SBI
-[2026-01-22 19:00:35.234] [config ] [info]     + URL......................................: 192.168.14.151:8080
-[2026-01-22 19:00:35.234] [config ] [info]     + API Version..............................: v1
-[2026-01-22 19:00:35.234] [config ] [info]     + IPv4 Address ............................: 192.168.14.151
-[2026-01-22 19:00:35.234] [config ] [info]   - N3:
-[2026-01-22 19:00:35.234] [config ] [info]     + Port.....................................: 2152
-[2026-01-22 19:00:35.234] [config ] [info]     + IPv4 Address ............................: 192.168.13.151
-[2026-01-22 19:00:35.234] [config ] [info]     + MTU......................................: 1500
-[2026-01-22 19:00:35.234] [config ] [info]     + Interface name: .........................: ens20
-[2026-01-22 19:00:35.234] [config ] [info]     + Network Instance.........................: internet
-[2026-01-22 19:00:35.234] [config ] [info]   - N4:
-[2026-01-22 19:00:35.234] [config ] [info]     + Port.....................................: 8805
-[2026-01-22 19:00:35.234] [config ] [info]     + IPv4 Address ............................: 192.168.14.151
-[2026-01-22 19:00:35.234] [config ] [info]     + MTU......................................: 1500
-[2026-01-22 19:00:35.234] [config ] [info]     + Interface name: .........................: ens21
-[2026-01-22 19:00:35.234] [config ] [info]   - N6:
-[2026-01-22 19:00:35.234] [config ] [info]     + Port.....................................: 2152
-[2026-01-22 19:00:35.234] [config ] [info]     + IPv4 Address ............................: 192.168.16.151
-[2026-01-22 19:00:35.234] [config ] [info]     + MTU......................................: 1500
-[2026-01-22 19:00:35.234] [config ] [info]     + Interface name: .........................: ens22
-[2026-01-22 19:00:35.234] [config ] [info]     + Network Instance.........................: internet
-[2026-01-22 19:00:35.234] [config ] [info]   - Instance ID................................: 0
-[2026-01-22 19:00:35.234] [config ] [info]   - Remote N6 Gateway..........................: 192.168.16.152
-[2026-01-22 19:00:35.234] [config ] [info]   - Support Features:
-[2026-01-22 19:00:35.234] [config ] [info]     + Enable BPF Datapath......................: Yes
-[2026-01-22 19:00:35.234] [config ] [info]     + Enable QoS...............................: Yes
-[2026-01-22 19:00:35.234] [config ] [info]     + Max upf interfaces.......................: 3
-[2026-01-22 19:00:35.234] [config ] [info]     + Max upf redirect interfaces..............: 2
-[2026-01-22 19:00:35.234] [config ] [info]     + Max PDU Session..........................: 10000
-[2026-01-22 19:00:35.234] [config ] [info]     + Max PDRs Per PDU Session.................: 8
-[2026-01-22 19:00:35.234] [config ] [info]     + Max Qos Flows Per PDU Session............: 8
-[2026-01-22 19:00:35.234] [config ] [info]     + Max SDF Filters Per PDU Session..........: 8
-[2026-01-22 19:00:35.234] [config ] [info]     + Max ARP Entries..........................: 2
-[2026-01-22 19:00:35.234] [config ] [info]     + Enable SNAT..............................: No
-[2026-01-22 19:00:35.234] [config ] [info]     + enable_fr................................: No
-[2026-01-22 19:00:35.234] [config ] [info]     + Enable Ethernet PDU Session..............: No
-[2026-01-22 19:00:35.234] [config ] [info]     + Ignore QFI For Uplink Classification.....: Yes
-[2026-01-22 19:00:35.234] [config ] [info]   + upf_info:
-[2026-01-22 19:00:35.234] [config ] [info]     - snssai_upf_info_item:
-[2026-01-22 19:00:35.234] [config ] [info]       + snssai:
-[2026-01-22 19:00:35.234] [config ] [info]         - sst..................................: 1
-[2026-01-22 19:00:35.234] [config ] [info]         - sd...................................: FFFFFF
-[2026-01-22 19:00:35.234] [config ] [info]       + dnns:
-[2026-01-22 19:00:35.234] [config ] [info]         - dnn..................................: internet
-[2026-01-22 19:00:35.234] [config ] [info] Peer NF Configuration:
-[2026-01-22 19:00:35.234] [config ] [info]   NRF:
-[2026-01-22 19:00:35.234] [config ] [info]     - host.....................................: 192.168.14.111
-[2026-01-22 19:00:35.234] [config ] [info]     - SBI
-[2026-01-22 19:00:35.234] [config ] [info]       + URL....................................: 192.168.14.111:8080
-[2026-01-22 19:00:35.234] [config ] [info]       + API Version............................: v1
-[2026-01-22 19:00:35.234] [config ] [info]   SMF:
-[2026-01-22 19:00:35.234] [config ] [info]     - host.....................................: 192.168.14.111
-[2026-01-22 19:00:35.234] [config ] [info]     - SBI
-[2026-01-22 19:00:35.234] [config ] [info]       + URL....................................: 192.168.14.111:8080
-[2026-01-22 19:00:35.234] [config ] [info]       + API Version............................: v1
-[2026-01-22 19:00:35.234] [config ] [info] DNNs:
-[2026-01-22 19:00:35.234] [config ] [info] - DNN:
-[2026-01-22 19:00:35.234] [config ] [info]     + DNN......................................: internet
-[2026-01-22 19:00:35.234] [config ] [info]     + PDU session type.........................: IPV4
-[2026-01-22 19:00:35.234] [config ] [info]     + IPv4 subnet..............................: 10.45.0.0/16
-[2026-01-22 19:00:35.234] [config ] [info]     + DNS Settings:
-[2026-01-22 19:00:35.234] [config ] [info]       - primary_dns_ipv4.......................: 8.8.8.8
-[2026-01-22 19:00:35.234] [config ] [info]       - secondary_dns_ipv4.....................: 1.1.1.1
-[2026-01-22 19:00:35.234] [upf_app] [info] HTTP Client successfully initiated on interface ens21 with timeout 3000 ms, HTTP version 2
-[2026-01-22 19:00:35.234] [common] [start] Starting...
-[2026-01-22 19:00:35.234] [common] [start] Started
-[2026-01-22 19:00:35.234] [asc_cmd] [start] Starting...
-[2026-01-22 19:00:35.234] [common] [info] Starting timer_manager_task
-[2026-01-22 19:00:35.235] [asc_cmd] [start] Started
-[2026-01-22 19:00:35.235] [upf_app] [start] Starting...
-[2026-01-22 19:00:35.236] [pfcp   ] [info] pfcp_l4_stack created listening to 192.168.14.151:8805
-[2026-01-22 19:00:35.236] [upf_n4 ] [start] Starting...
-[2026-01-22 19:00:35.237] [upf_n4 ] [start] Started
-[2026-01-22 19:00:35.237] [upf_app] [start] Started
-[2026-01-22 19:00:35.238] [upf_app] [info] GTP interface: ens20
-[2026-01-22 19:00:35.238] [upf_app] [info] Non-GTP interface: ens22
-[2026-01-22 19:00:35.238] [upf_app] [info] Initializing PFCP Session Lookup BPF program...
-[2026-01-22 19:00:35.238] [upf_app] [info] BPFProgram 1 is created!!!
-[2026-01-22 19:00:35.238] [upf_app] [info] PDR Lookup Config: ignore_qfi_for_uplink=true
-[2026-01-22 19:00:35.320] [upf_app] [info] Reference Point N3 Added to m_upf_interface Map
-[2026-01-22 19:00:35.320] [upf_app] [info] Reference Point N6 Added to m_upf_interface Map
-[2026-01-22 19:00:35.320] [upf_app] [info] Reference Point N4 Added to m_upf_interface Map
-[2026-01-22 19:00:35.321] [upf_app] [info] BPF program xdp_handle_uplink hooked in ens20 XDP interface
-[2026-01-22 19:00:35.321] [upf_app] [info] BPF program xdp_handle_shaping hooked in ens22 XDP interface
+[2026-01-23 19:58:25.096] [upf_app] [start] Options parsed
+[2026-01-23 19:58:25.096] [config ] [info] Reading NF configuration from config.yaml
+[2026-01-23 19:58:25.101] [config ] [debug] Validating configuration of log_level
+[2026-01-23 19:58:25.104] [config ] [info] Basic Configuration:
+[2026-01-23 19:58:25.104] [config ] [info]   - log_level..................................: info
+[2026-01-23 19:58:25.104] [config ] [info]   - register_nf................................: No
+[2026-01-23 19:58:25.104] [config ] [info]   - http_version...............................: 2
+[2026-01-23 19:58:25.104] [config ] [info]   TLS:
+[2026-01-23 19:58:25.104] [config ] [info]     - Enable TLS.................................: No
+[2026-01-23 19:58:25.104] [config ] [info]   - HTTP Request Timeout.......................: 3000 (ms)
+[2026-01-23 19:58:25.104] [config ] [info] UPF Configuration:
+[2026-01-23 19:58:25.104] [config ] [info]   - host.......................................: 192.168.14.151
+[2026-01-23 19:58:25.104] [config ] [info]   - SBI
+[2026-01-23 19:58:25.104] [config ] [info]     + URL......................................: 192.168.14.151:8080
+[2026-01-23 19:58:25.104] [config ] [info]     + API Version..............................: v1
+[2026-01-23 19:58:25.104] [config ] [info]     + IPv4 Address ............................: 192.168.14.151
+[2026-01-23 19:58:25.104] [config ] [info]   - N3:
+[2026-01-23 19:58:25.104] [config ] [info]     + Port.....................................: 2152
+[2026-01-23 19:58:25.104] [config ] [info]     + IPv4 Address ............................: 192.168.13.151
+[2026-01-23 19:58:25.104] [config ] [info]     + MTU......................................: 1500
+[2026-01-23 19:58:25.104] [config ] [info]     + Interface name: .........................: ens20
+[2026-01-23 19:58:25.104] [config ] [info]     + Network Instance.........................: internet
+[2026-01-23 19:58:25.104] [config ] [info]   - N4:
+[2026-01-23 19:58:25.104] [config ] [info]     + Port.....................................: 8805
+[2026-01-23 19:58:25.104] [config ] [info]     + IPv4 Address ............................: 192.168.14.151
+[2026-01-23 19:58:25.104] [config ] [info]     + MTU......................................: 1500
+[2026-01-23 19:58:25.104] [config ] [info]     + Interface name: .........................: ens21
+[2026-01-23 19:58:25.104] [config ] [info]   - N6:
+[2026-01-23 19:58:25.104] [config ] [info]     + Port.....................................: 2152
+[2026-01-23 19:58:25.104] [config ] [info]     + IPv4 Address ............................: 192.168.16.151
+[2026-01-23 19:58:25.104] [config ] [info]     + MTU......................................: 1500
+[2026-01-23 19:58:25.104] [config ] [info]     + Interface name: .........................: ens22
+[2026-01-23 19:58:25.104] [config ] [info]     + Network Instance.........................: internet
+[2026-01-23 19:58:25.104] [config ] [info]   - Instance ID................................: 0
+[2026-01-23 19:58:25.104] [config ] [info]   - Remote N6 Gateway..........................: 192.168.16.152
+[2026-01-23 19:58:25.104] [config ] [info]   - Support Features:
+[2026-01-23 19:58:25.104] [config ] [info]     + Enable BPF Datapath......................: Yes
+[2026-01-23 19:58:25.104] [config ] [info]     + Enable QoS...............................: Yes
+[2026-01-23 19:58:25.104] [config ] [info]     + Max upf interfaces.......................: 3
+[2026-01-23 19:58:25.104] [config ] [info]     + Max upf redirect interfaces..............: 2
+[2026-01-23 19:58:25.104] [config ] [info]     + Max PDU Session..........................: 10000
+[2026-01-23 19:58:25.104] [config ] [info]     + Max PDRs Per PDU Session.................: 8
+[2026-01-23 19:58:25.104] [config ] [info]     + Max Qos Flows Per PDU Session............: 8
+[2026-01-23 19:58:25.104] [config ] [info]     + Max SDF Filters Per PDU Session..........: 8
+[2026-01-23 19:58:25.104] [config ] [info]     + Max ARP Entries..........................: 2
+[2026-01-23 19:58:25.104] [config ] [info]     + Enable SNAT..............................: No
+[2026-01-23 19:58:25.104] [config ] [info]     + enable_fr................................: No
+[2026-01-23 19:58:25.104] [config ] [info]     + Enable Ethernet PDU Session..............: No
+[2026-01-23 19:58:25.104] [config ] [info]     + Ignore QFI For Uplink Classification.....: Yes
+[2026-01-23 19:58:25.104] [config ] [info]   + upf_info:
+[2026-01-23 19:58:25.104] [config ] [info]     - snssai_upf_info_item:
+[2026-01-23 19:58:25.104] [config ] [info]       + snssai:
+[2026-01-23 19:58:25.104] [config ] [info]         - sst..................................: 1
+[2026-01-23 19:58:25.104] [config ] [info]         - sd...................................: FFFFFF
+[2026-01-23 19:58:25.104] [config ] [info]       + dnns:
+[2026-01-23 19:58:25.104] [config ] [info]         - dnn..................................: internet
+[2026-01-23 19:58:25.104] [config ] [info] Peer NF Configuration:
+[2026-01-23 19:58:25.104] [config ] [info]   NRF:
+[2026-01-23 19:58:25.104] [config ] [info]     - host.....................................: 192.168.14.111
+[2026-01-23 19:58:25.104] [config ] [info]     - SBI
+[2026-01-23 19:58:25.104] [config ] [info]       + URL....................................: 192.168.14.111:8080
+[2026-01-23 19:58:25.104] [config ] [info]       + API Version............................: v1
+[2026-01-23 19:58:25.104] [config ] [info]   SMF:
+[2026-01-23 19:58:25.104] [config ] [info]     - host.....................................: 192.168.14.111
+[2026-01-23 19:58:25.104] [config ] [info]     - SBI
+[2026-01-23 19:58:25.104] [config ] [info]       + URL....................................: 192.168.14.111:8080
+[2026-01-23 19:58:25.104] [config ] [info]       + API Version............................: v1
+[2026-01-23 19:58:25.104] [config ] [info] DNNs:
+[2026-01-23 19:58:25.104] [config ] [info] - DNN:
+[2026-01-23 19:58:25.104] [config ] [info]     + DNN......................................: internet
+[2026-01-23 19:58:25.104] [config ] [info]     + PDU session type.........................: IPV4
+[2026-01-23 19:58:25.104] [config ] [info]     + IPv4 subnet..............................: 10.45.0.0/16
+[2026-01-23 19:58:25.104] [config ] [info]     + DNS Settings:
+[2026-01-23 19:58:25.104] [config ] [info]       - primary_dns_ipv4.......................: 8.8.8.8
+[2026-01-23 19:58:25.104] [config ] [info]       - secondary_dns_ipv4.....................: 1.1.1.1
+[2026-01-23 19:58:25.104] [upf_app] [info] HTTP Client successfully initiated on interface ens21 with timeout 3000 ms, HTTP version 2
+[2026-01-23 19:58:25.104] [common] [start] Starting...
+[2026-01-23 19:58:25.104] [common] [start] Started
+[2026-01-23 19:58:25.104] [asc_cmd] [start] Starting...
+[2026-01-23 19:58:25.104] [common] [info] Starting timer_manager_task
+[2026-01-23 19:58:25.106] [asc_cmd] [start] Started
+[2026-01-23 19:58:25.106] [upf_app] [start] Starting...
+[2026-01-23 19:58:25.107] [pfcp   ] [info] pfcp_l4_stack created listening to 192.168.14.151:8805
+[2026-01-23 19:58:25.107] [upf_n4 ] [start] Starting...
+[2026-01-23 19:58:25.108] [upf_n4 ] [start] Started
+[2026-01-23 19:58:25.108] [upf_app] [start] Started
+[2026-01-23 19:58:25.108] [upf_app] [info] GTP interface: ens20
+[2026-01-23 19:58:25.108] [upf_app] [info] Non-GTP interface: ens22
+[2026-01-23 19:58:25.108] [upf_app] [info] Initializing PFCP Session Lookup BPF program...
+[2026-01-23 19:58:25.108] [upf_app] [info] BPFProgram 1 is created!!!
+[2026-01-23 19:58:25.109] [upf_app] [info] PDR Lookup Config: ignore_qfi_for_uplink=true
+[2026-01-23 19:58:25.195] [upf_app] [info] Reference Point N3 Added to m_upf_interface Map
+[2026-01-23 19:58:25.195] [upf_app] [info] Reference Point N6 Added to m_upf_interface Map
+[2026-01-23 19:58:25.195] [upf_app] [info] Reference Point N4 Added to m_upf_interface Map
+[2026-01-23 19:58:25.201] [upf_app] [info] BPF program xdp_handle_uplink hooked in ens20 XDP interface
+[2026-01-23 19:58:25.207] [upf_app] [info] BPF program xdp_handle_shaping hooked in ens22 XDP interface
 ```
 The link status of the network interfaces N3(ens20) and N6(ens22) is as follows.
 ```
 # ip link show
 ...
-4: ens20: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 xdp qdisc fq_codel state UP mode DEFAULT group default qlen 1000
-    link/ether bc:24:11:3a:40:26 brd ff:ff:ff:ff:ff:ff
-    prog/xdp id 23 tag 6c60e72a1ce2d8a3 jited 
+4: ens20: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 xdp qdisc htb state UP mode DEFAULT group default qlen 1000
+    link/ether bc:24:11:c2:c1:38 brd ff:ff:ff:ff:ff:ff
+    prog/xdp id 163 
     altname enp0s20
 ...
 6: ens22: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 xdp qdisc fq_codel state UP mode DEFAULT group default qlen 1000
-    link/ether bc:24:11:fc:86:c6 brd ff:ff:ff:ff:ff:ff
-    prog/xdp id 25 tag ac3f8821f6f1dc69 jited 
+    link/ether bc:24:11:98:5b:e1 brd ff:ff:ff:ff:ff:ff
+    prog/xdp id 165 
     altname enp0s22
 ...
 ```
@@ -473,5 +508,6 @@ I would like to thank the excellent developers and all the contributors of OAI-C
 
 ## Changelog (summary)
 
+- [2026.01.23] Updated the OS from Ubuntu 22.04 to 24.04.
 - [2026.01.22] Instead of my `common-src_3gpp_interface_type.patch`, changed to apply the patch that was already committed to `fix_upf_qos_missing_ie` branch.
 - [2026.01.18] Initial release.
