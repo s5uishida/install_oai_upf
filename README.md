@@ -305,6 +305,11 @@ global:
 
 ## Run OAI-CN5G-UPF on VM-UP
 
+First, in traffic control, clear the current queuing discipline (qdisc) set on N3(ens20).
+```
+# tc qdisc delete dev ens20 root
+```
+Then run UPF.
 ```
 # cd ~/openair-upf
 # upf -c config.yaml -o
