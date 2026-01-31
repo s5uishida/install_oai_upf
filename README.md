@@ -148,7 +148,7 @@ Also get the patches to build on Ubuntu 24.04.
 
 Additionally, fix to set QFI for downlink PDR.
 
-- [Fix datapath temporary](https://github.com/s5uishida/install_oai_upf/blob/main/patches/SessionProgramManager.cpp.fix_datapath.patch)
+- [Fix datapath temporarily](https://github.com/s5uishida/install_oai_upf/blob/main/patches/SessionProgramManager.cpp.fix_datapath.patch)
   ```
   # wget https://raw.githubusercontent.com/s5uishida/install_oai_upf/refs/heads/main/patches/SessionProgramManager.cpp.fix_datapath.patch
   ```
