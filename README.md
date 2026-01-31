@@ -141,9 +141,23 @@ Also get the patches to build on Ubuntu 24.04.
   # wget https://gitlab.eurecom.fr/oai/cn5g/oai-cn5g-upf/-/merge_requests/93.diff -O 93.patch
   ```
 
-- [fix the issue](https://github.com/s5uishida/install_oai_upf/blob/main/patches/http_client.cpp.fix.patch) in [fix clang-12 formatting issues](https://gitlab.eurecom.fr/oai/cn5g/oai-cn5g-common-src/-/commit/8e687109d80c07f1a775d753806f208028987116)
+- [Fix the issue](https://github.com/s5uishida/install_oai_upf/blob/main/patches/http_client.cpp.fix.patch) in [fix clang-12 formatting issues](https://gitlab.eurecom.fr/oai/cn5g/oai-cn5g-common-src/-/commit/8e687109d80c07f1a775d753806f208028987116)
   ```
   # wget https://raw.githubusercontent.com/s5uishida/install_oai_upf/refs/heads/main/patches/http_client.cpp.fix.patch
+  ```
+
+Additionally, fix to set QFI for downlink PDR.
+
+- [Fix datapath temporary](https://github.com/s5uishida/install_oai_upf/blob/main/patches/SessionProgramManager.cpp.fix_datapath.patch)
+  ```
+  # wget https://raw.githubusercontent.com/s5uishida/install_oai_upf/refs/heads/main/patches/SessionProgramManager.cpp.fix_datapath.patch
+  ```
+  I created this patch based on [Fix: fix datapath and add specificity](https://gitlab.eurecom.fr/oai/cn5g/oai-cn5g-upf/-/commit/99713e35bcb8e2473dc7c00d03994830661f3f10).
+  This makes to work with Open5GS SMF and srsRAN_Project gNodeB.
+  ```
+  // For downlink PDRs, QFI is not in PDI (no incoming GTP-U
+  // header) Copy QFI from QER into PDR's PDI for BPF matching logic See
+  // 3GPP TS 29.244 Section 8.2.89 - QFI is in QER for downlink
   ```
 
 <a id="clone"></a>
@@ -187,7 +201,9 @@ Download and change to tag `v2.2.0`.
 # cd ~/oai-cn5g-upf
 # patch -p1 < ~/85.patch
 # patch -p1 < ~/88.patch
-# cd src/common-src
+# cd src/upf_app
+# patch SessionProgramManager.cpp < ~/SessionProgramManager.cpp.fix_datapath.patch
+# cd ../common-src
 # patch -p1 < ~/measurement-ie.patch
 # patch -p1 < ~/fix_upf_qos_missing_ie.patch
 ```
@@ -512,6 +528,7 @@ I would like to thank the excellent developers and all the contributors of OAI-C
 
 ## Changelog (summary)
 
+- [2026.01.31] Fixed to set QFI for downlink PDR.
 - [2026.01.23] Updated the OS from Ubuntu 22.04 to 24.04.
 - [2026.01.22] Instead of my `common-src_3gpp_interface_type.patch`, changed to apply the patch that was already committed to `fix_upf_qos_missing_ie` branch.
 - [2026.01.18] Initial release.
