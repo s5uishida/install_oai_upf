@@ -1,0 +1,41 @@
+--- SessionProgramManager.cpp.orig	2026-01-23 18:14:02.000000000 +0900
++++ SessionProgramManager.cpp	2026-02-01 01:31:53.000000000 +0900
+@@ -136,7 +136,13 @@
+       pFar->forwarding_parameters.second.outer_header_creation.second
+           .ipv4_address.s_addr;
+ 
+-  memcpy(&far.apply_action, &pFar->apply_action, sizeof(apply_action_t_));
++  //memcpy(&far.apply_action, &pFar->apply_action, sizeof(apply_action_t_));
++  far.apply_action.drop  = pFar->apply_action.drop ? 1 : 0;
++  far.apply_action.forw  = pFar->apply_action.forw ? 1 : 0;
++  far.apply_action.buff  = pFar->apply_action.buff ? 1 : 0;
++  far.apply_action.nocp  = pFar->apply_action.nocp ? 1 : 0;
++  far.apply_action.dupl  = pFar->apply_action.dupl ? 1 : 0;
++  far.apply_action.spare = 0;
+ 
+   return far;
+ }
+@@ -786,6 +792,11 @@
+     }
+ 
+     pdrs[i] = createPdr(pdr);
++
++    if (pdrs[i].pdi.qfi.qfi == 0 && rules.qer.qos_flow_identifier.qfi != 0) {
++      pdrs[i].pdi.qfi.qfi = rules.qer.qos_flow_identifier.qfi;
++    }
++
+     i++;
+   }
+ 
+@@ -1110,6 +1121,11 @@
+     }
+ 
+     pdrs[i] = createPdr(pdr);
++
++    if (pdrs[i].pdi.qfi.qfi == 0 && rules.qer.qos_flow_identifier.qfi != 0) {
++      pdrs[i].pdi.qfi.qfi = rules.qer.qos_flow_identifier.qfi;
++    }
++
+     i++;
+   }
+ 
