@@ -160,6 +160,14 @@ Additionally, fix to set QFI for downlink PDR.
   // 3GPP TS 29.244 Section 8.2.89 - QFI is in QER for downlink
   ```
 
+Then, get a patch that assumes that `qer_tc_kernel.c.o` is in the same directory as `upf`.
+`qer_tc_user.cpp` assumes that `qer_tc_kernel.c.o` is installed in unique `/openair-upf/bin`, so this patch will change the assumption.
+
+- [Change the installation location of `qer_tc_kernel.c.o`](https://github.com/s5uishida/install_oai_upf/blob/main/patches/install_qer_tc_kernel_c_o.patch)
+  ```
+  # wget https://raw.githubusercontent.com/s5uishida/install_oai_upf/refs/heads/main/patches/install_qer_tc_kernel_c_o.patch
+  ```
+
 <a id="clone"></a>
 
 ### Clone OAI-CN5G-UPF
@@ -203,7 +211,9 @@ Download and change to tag `v2.2.0`.
 # patch -p1 < ~/88.patch
 # cd src/upf_app
 # patch SessionProgramManager.cpp < ~/SessionProgramManager.cpp.fix_datapath.patch
-# cd ../common-src
+# cd ../..
+# patch -p1 < ~/install_qer_tc_kernel_c_o.patch
+# cd src/common-src
 # patch -p1 < ~/measurement-ie.patch
 # patch -p1 < ~/fix_upf_qos_missing_ie.patch
 ```
@@ -220,12 +230,6 @@ First, check installed software necessary to build and run UPF. Then, build and 
 # cp ~/oai-cn5g-upf/etc/config.yaml /usr/local/etc/oai/config.yaml.orig
 # echo "/usr/lib64" >> /etc/ld.so.conf.d/libbpf.conf
 # ldconfig
-```
-Finally, prepare the directory `openair-upf` to run UPF and the `tc` module to control QER.
-```
-# mkdir -p ~/openair-upf/bin
-# cp ~/oai-cn5g-upf/build/upf/build/upf_app/bpf/CMakeFiles/qer_tc.dir/rules/qer/qer_tc_kernel.c.o ~/openair-upf/bin/
-# ln -s /root/openair-upf /openair-upf
 ```
 
 <a id="setup_up"></a>
@@ -528,6 +532,7 @@ I would like to thank the excellent developers and all the contributors of OAI-C
 
 ## Changelog (summary)
 
+- [2026.02.08] Added a patch to install `qer_tc_kernel.c.o` in the same directory as `upf`. `qer_tc_user.cpp` assumes that `qer_tc_kernel.c.o` is installed in unique `/openair-upf/bin`, so this patch changes the assumption.
 - [2026.01.31] Fixed to set QFI for downlink PDR.
 - [2026.01.23] Updated the OS from Ubuntu 22.04 to 24.04.
 - [2026.01.22] Instead of my `common-src_3gpp_interface_type.patch`, changed to apply the patch that was already committed to `fix_upf_qos_missing_ie` branch.
