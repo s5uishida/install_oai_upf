@@ -209,11 +209,10 @@ Download and change to tag `v2.2.0`.
 # cd ~/oai-cn5g-upf
 # patch -p1 < ~/85.patch
 # patch -p1 < ~/88.patch
+# patch -p1 < ~/install_qer_tc_kernel_c_o.patch
 # cd src/upf_app
 # patch SessionProgramManager.cpp < ~/SessionProgramManager.cpp.fix_datapath.patch
-# cd ../..
-# patch -p1 < ~/install_qer_tc_kernel_c_o.patch
-# cd src/common-src
+# cd ../common-src
 # patch -p1 < ~/measurement-ie.patch
 # patch -p1 < ~/fix_upf_qos_missing_ie.patch
 ```
