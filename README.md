@@ -26,6 +26,7 @@ This briefly describes the steps and configuration to build and install [OAI-CN5
   - [Create configuration file](#conf)
     - [Changes in the configuration file for AF_PACKET mode](#af_conf)
     - [How to use Framed Routing in AF_PACKET mode](#fr)
+    - [Network settings in AF_PACKET mode](#network_settings)
   - [Note for smf.yaml of Open5GS](#open5gs)
 - [Run OAI-CN5G-UPF on VM-UP](#run)
 - [Setup Data Network Gateway on VM-DN](#setup_dn)
@@ -377,13 +378,6 @@ When running UPF in AF_PACKET mode instead of eBPF/XDP mode, change the configur
      max_upf_interfaces: 3
      max_upf_redirect_interfaces: 2
 ```
-Also, uncomment the next line in `/etc/sysctl.conf` and reflect it in the OS.
-```
-net.ipv4.ip_forward=1
-```
-```
-# sysctl -p
-```
 
 <a id="fr"></a>
 
@@ -404,6 +398,18 @@ When using Framed Routing in AF_PACKET mode, change the configuration file as fo
      sNssaiUpfInfoList:
 ```
 **According to [this](https://gitlab.eurecom.fr/oai/cn5g/oai-cn5g-upf/-/blob/master/CHANGELOG.md#v220----december-2025), Framed Routing does not yet work in eBPF/XDP mode.**
+
+<a id="network_settings"></a>
+
+#### Network settings in AF_PACKET mode
+
+Uncomment the next line in `/etc/sysctl.conf` and reflect it in the OS.
+```
+net.ipv4.ip_forward=1
+```
+```
+# sysctl -p
+```
 
 <a id="open5gs"></a>
 
