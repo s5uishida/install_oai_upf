@@ -24,6 +24,8 @@ This briefly describes the steps and configuration to build and install [OAI-CN5
   - [Build and Install OAI-CN5G-UPF](#build_install)
 - [Setup OAI-CN5G-UPF on VM-UP](#setup_up)
   - [Create configuration file](#conf)
+    - [Changes in the configuration file for AF_PACKET mode](#af_conf)
+    - [How to use Framed Routing in AF_PACKET mode](#fr)
   - [Note for smf.yaml of Open5GS](#open5gs)
 - [Run OAI-CN5G-UPF on VM-UP](#run)
 - [Setup Data Network Gateway on VM-DN](#setup_dn)
@@ -357,6 +359,52 @@ nfs:
       interface_name: ens21
 ```
 
+<a id="af_conf"></a>
+
+#### Changes in the configuration file for AF_PACKET mode
+
+When running UPF in AF_PACKET mode instead of eBPF/XDP mode, change the configuration file as follows.
+```diff
+--- config.yaml.orig    2026-02-11 21:42:22.637854645 +0900
++++ config.yaml 2026-02-11 21:42:41.235189919 +0900
+@@ -48,7 +48,7 @@
+ 
+ upf:
+   support_features:
+-    enable_bpf_datapath: yes
++    enable_bpf_datapath: no
+     enable_qos: yes
+     max_upf_interfaces: 3
+     max_upf_redirect_interfaces: 2
+```
+Also, uncomment the next line in `/etc/sysctl.conf` and reflect it in the OS.
+```
+net.ipv4.ip_forward=1
+```
+```
+# sysctl -p
+```
+
+<a id="fr"></a>
+
+#### How to use Framed Routing in AF_PACKET mode
+
+When using Framed Routing in AF_PACKET mode, change the configuration file as follows.
+```diff
+--- config.yaml.orig    2026-02-11 21:42:22.637854645 +0900
++++ config.yaml 2026-02-11 21:42:41.235189919 +0900
+@@ -57,7 +57,7 @@
+     max_qos_flows_per_pdu_session: 8
+     max_sdf_filters_per_pdu_session: 8
+     max_arp_entries: 2
+-    enable_fr: no
++    enable_fr: yes
+   remote_n6_gw: 192.168.16.152
+   upf_info:
+     sNssaiUpfInfoList:
+```
+**According to [this](https://gitlab.eurecom.fr/oai/cn5g/oai-cn5g-upf/-/blob/master/CHANGELOG.md#v220----december-2025), Framed Routing does not yet work in eBPF/XDP mode.**
+
 <a id="open5gs"></a>
 
 ### Note for smf.yaml of Open5GS
@@ -542,6 +590,7 @@ I would like to thank the excellent developers and all the contributors of OAI-C
 
 ## Changelog (summary)
 
+- [2026.02.11] Added how to use AF_PACKET mode and Framed Routing.
 - [2026.02.11] Added applying `fix: Prevent UPF crash during session modification with complete rule replacement` and `fix: Resolve UPF crash after 8 concurrent sessions due to incorrect BPF map sizing`.
 - [2026.02.08] Added a patch to install `qer_tc_kernel.c.o` in the same directory as `upf`. `qer_tc_user.cpp` assumes that `qer_tc_kernel.c.o` is installed in unique `/openair-upf/bin`, so this patch changes the assumption.
 - [2026.01.31] Fixed to set QFI for downlink PDR.
