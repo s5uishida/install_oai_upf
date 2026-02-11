@@ -1,0 +1,40 @@
+diff -urN oai-cn5g-upf.orig/src/common-src/3gpp/3gpp_29.244.h oai-cn5g-upf/src/common-src/3gpp/3gpp_29.244.h
+--- oai-cn5g-upf.orig/src/common-src/3gpp/3gpp_29.244.h	2026-02-12 07:24:34.388070265 +0900
++++ oai-cn5g-upf/src/common-src/3gpp/3gpp_29.244.h	2026-02-12 07:31:53.918010614 +0900
+@@ -1402,6 +1402,7 @@
+ #define OUTER_HEADER_REMOVAL_GTPU_UDP_IPV6 1
+ #define OUTER_HEADER_REMOVAL_UDP_IPV4 2
+ #define OUTER_HEADER_REMOVAL_UDP_IPV6 3
++#define OUTER_HEADER_REMOVAL_GTPU_UDP_IP 6
+ typedef struct outer_header_removal_s {
+   uint8_t outer_header_removal_description;
+ } outer_header_removal_t;
+diff -urN oai-cn5g-upf.orig/src/upf_app/simpleswitch/pfcp_pdr.cpp oai-cn5g-upf/src/upf_app/simpleswitch/pfcp_pdr.cpp
+--- oai-cn5g-upf.orig/src/upf_app/simpleswitch/pfcp_pdr.cpp	2026-02-12 07:23:56.818956221 +0900
++++ oai-cn5g-upf/src/upf_app/simpleswitch/pfcp_pdr.cpp	2026-02-12 07:32:31.771090279 +0900
+@@ -43,8 +43,8 @@
+     const endpoint& r_endpoint, const uint32_t tunnel_id) {
+   // implicit packet arrives from ACCESS interface
+   if (outer_header_removal.first) {
+-    if (outer_header_removal.second.outer_header_removal_description !=
+-        OUTER_HEADER_REMOVAL_GTPU_UDP_IPV4) {
++    if ((outer_header_removal.second.outer_header_removal_description != OUTER_HEADER_REMOVAL_GTPU_UDP_IPV4) &&
++	(outer_header_removal.second.outer_header_removal_description != OUTER_HEADER_REMOVAL_GTPU_UDP_IP)) {
+       return false;
+     }
+   } else {
+diff -urN oai-cn5g-upf.orig/src/upf_app/simpleswitch/pfcp_session.cpp oai-cn5g-upf/src/upf_app/simpleswitch/pfcp_session.cpp
+--- oai-cn5g-upf.orig/src/upf_app/simpleswitch/pfcp_session.cpp	2026-02-12 07:23:56.818956221 +0900
++++ oai-cn5g-upf/src/upf_app/simpleswitch/pfcp_session.cpp	2026-02-12 07:32:57.780145032 +0900
+@@ -696,6 +696,11 @@
+           s.append(
+               fmt::format(":{:08x}", pdr->pdi.second.local_fteid.second.teid));
+         } break;
++        case OUTER_HEADER_REMOVAL_GTPU_UDP_IP: {
++          s.append("|GTPU_UDP_IP");
++          s.append(
++              fmt::format(":{:08x}", pdr->pdi.second.local_fteid.second.teid));
++        } break;
+         case OUTER_HEADER_REMOVAL_UDP_IPV4: {
+           s.append("|UDP_IPV4     ");
+           s.append(9, ' ');
