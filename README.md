@@ -157,7 +157,7 @@ Also get the patches to build on Ubuntu 24.04.
   # wget https://raw.githubusercontent.com/s5uishida/install_oai_upf/refs/heads/main/patches/http_client.cpp.fix.patch
   ```
 
-Additionally, fix to set QFI for downlink PDR.
+Additionally, fix to set QFI for downlink PDR and support GTP-U/UDP/IP(6) value for Outer Header Removal.
 
 - [Fix datapath temporarily](https://github.com/s5uishida/install_oai_upf/blob/main/patches/SessionProgramManager.cpp.fix_datapath.patch)
   ```
@@ -169,6 +169,11 @@ Additionally, fix to set QFI for downlink PDR.
   // For downlink PDRs, QFI is not in PDI (no incoming GTP-U
   // header) Copy QFI from QER into PDR's PDI for BPF matching logic See
   // 3GPP TS 29.244 Section 8.2.89 - QFI is in QER for downlink
+  ```
+
+- [feat: support GTP-U/UDP/IP(6) value for Outer Header Removal](https://github.com/s5uishida/install_oai_upf/blob/main/patches/feat_ohr_gtpu_udp_ip.patch)
+  ```
+  # wget https://raw.githubusercontent.com/s5uishida/install_oai_upf/refs/heads/main/patches/feat_ohr_gtpu_udp_ip.patch
   ```
 
 Then, get a patch that assumes that `qer_tc_kernel.c.o` is in the same directory as `upf`.
@@ -222,6 +227,7 @@ Download and change to tag `v2.2.0`.
 # patch -p1 < ~/88.patch
 # patch -p1 < ~/91.patch
 # patch -p1 < ~/92.patch
+# patch -p1 < ~/feat_ohr_gtpu_udp_ip.patch
 # patch -p1 < ~/install_qer_tc_kernel_c_o.patch
 # cd src/upf_app
 # patch SessionProgramManager.cpp < ~/SessionProgramManager.cpp.fix_datapath.patch
