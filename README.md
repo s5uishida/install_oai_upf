@@ -126,6 +126,14 @@ First, get the patches for the following merge requests of OAI-CN5G-UPF to work 
   ```
   # wget https://gitlab.eurecom.fr/-/project/5331/uploads/a477009219a1535fa1f4ab85aaba422a/measurement-ie.patch
   ```
+- [fix: Prevent UPF crash during session modification with complete rule replacement](https://gitlab.eurecom.fr/oai/cn5g/oai-cn5g-upf/-/merge_requests/91)
+  ```
+  # wget https://gitlab.eurecom.fr/oai/cn5g/oai-cn5g-upf/-/merge_requests/91.diff -O 91.patch
+  ```
+- [fix: Resolve UPF crash after 8 concurrent sessions due to incorrect BPF map sizing](https://gitlab.eurecom.fr/oai/cn5g/oai-cn5g-upf/-/merge_requests/92)
+  ```
+  # wget https://gitlab.eurecom.fr/oai/cn5g/oai-cn5g-upf/-/merge_requests/92.diff -O 92.patch
+  ```
 
 And get a patch that fixes the missing IEs for QoS. This patch enables PFCP communication with Open5GS SMF.
 
@@ -209,6 +217,8 @@ Download and change to tag `v2.2.0`.
 # cd ~/oai-cn5g-upf
 # patch -p1 < ~/85.patch
 # patch -p1 < ~/88.patch
+# patch -p1 < ~/91.patch
+# patch -p1 < ~/92.patch
 # patch -p1 < ~/install_qer_tc_kernel_c_o.patch
 # cd src/upf_app
 # patch SessionProgramManager.cpp < ~/SessionProgramManager.cpp.fix_datapath.patch
@@ -308,6 +318,7 @@ upf:
     max_qos_flows_per_pdu_session: 8
     max_sdf_filters_per_pdu_session: 8
     max_arp_entries: 2
+    enable_fr: no
   remote_n6_gw: 192.168.16.152
   upf_info:
     sNssaiUpfInfoList:
@@ -531,6 +542,7 @@ I would like to thank the excellent developers and all the contributors of OAI-C
 
 ## Changelog (summary)
 
+- [2026.02.11] Added applying `fix: Prevent UPF crash during session modification with complete rule replacement` and `fix: Resolve UPF crash after 8 concurrent sessions due to incorrect BPF map sizing`.
 - [2026.02.08] Added a patch to install `qer_tc_kernel.c.o` in the same directory as `upf`. `qer_tc_user.cpp` assumes that `qer_tc_kernel.c.o` is installed in unique `/openair-upf/bin`, so this patch changes the assumption.
 - [2026.01.31] Fixed to set QFI for downlink PDR.
 - [2026.01.23] Updated the OS from Ubuntu 22.04 to 24.04.
