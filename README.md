@@ -590,6 +590,7 @@ I would like to thank the excellent developers and all the contributors of OAI-C
 ## Sample Configurations
 
 - [Open5GS 5GC & UERANSIM UE / RAN Sample Configuration - OAI-CN5G-UPF(eBPF/XDP UPF)](https://github.com/s5uishida/open5gs_5gc_ueransim_oai_upf_sample_config)
+- [Open5GS 5GC & UERANSIM UE / RAN Sample Configuration - Framed Routing with OAI-CN5G-UPF(AF_PACKET)](https://github.com/s5uishida/open5gs_5gc_ueransim_oai_upf_framed_routing_sample_config)
 - [free5GC 5GC & UERANSIM UE / RAN Sample Configuration - OAI-CN5G-UPF(eBPF/XDP UPF)](https://github.com/s5uishida/free5gc_ueransim_oai_upf_sample_config)
 
 <a id="changelog"></a>
