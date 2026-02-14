@@ -6,8 +6,9 @@ This briefly describes the steps and configuration to build and install [OAI-CN5
 **In my environment,** when try to make OAI-CN5G-UPF work with Open5GS or free5GC C-Plane, the results of a simple operation confirmation were as follows.
 | UPF mode | Open5GS | free5GC |
 | --- | --- | --- |
-| Simple Switch | OK | NG |
+| Simple Switch | OK **[1]** | NG |
 | eBPF/XDP | OK | OK |
+1. In N3 downlink packets from OAI-CN5G-UPF to gNodeB, the QFI of PDU session container in GTP-U extension header may be 0. In this case, for example, the gNodeB of srsRAN_Project seems to drop such packets. In my environment, the problem has not been solved yet.
 
 ---
 
