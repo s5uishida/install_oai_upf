@@ -3,6 +3,12 @@
 This briefly describes the steps and configuration to build and install [OAI-CN5G-UPF](https://gitlab.eurecom.fr/oai/cn5g/oai-cn5g-upf).
 **It is intended to be prepared for use with [Open5GS](https://github.com/open5gs/open5gs) and [free5GC](https://github.com/free5gc/free5gc).**
 
+In my environment, the results of a simple operation confirmation were as follows.
+| UPF mode | Open5GS | free5GC |
+| --- | --- | --- |
+| AF_PACKET | OK | NG |
+| eBPF/XDP | OK | OK |
+
 ---
 
 ### [Sample Configurations and Miscellaneous for Mobile Network](https://github.com/s5uishida/sample_config_misc_for_mobile_network)
