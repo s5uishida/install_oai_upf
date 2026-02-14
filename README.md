@@ -8,7 +8,7 @@ This briefly describes the steps and configuration to build and install [OAI-CN5
 | --- | --- | --- |
 | Simple Switch | OK **[1]** | NG |
 | eBPF/XDP | OK | OK |
-1. In N3 downlink packets from OAI-CN5G-UPF to gNodeB, the QFI of PDU session container in GTP-U extension header may be 0. In this case, for example, the gNodeB of srsRAN_Project seems to drop such packets. In my environment, the problem has not been solved yet.
+1. In N3 downlink packets from OAI-CN5G-UPF to gNodeB, the QFI of PDU session container in GTP-U extension header may be 0. In this case, for example, the gNodeB of srsRAN_Project seems to drop such packets. In my environment, the issue has not been solved yet.
 
 ---
 
