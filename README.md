@@ -6,7 +6,7 @@ This briefly describes the steps and configuration to build and install [OAI-CN5
 **In my environment,** when try to make OAI-CN5G-UPF work with Open5GS or free5GC C-Plane, the results of a simple operation confirmation were as follows.
 | UPF mode | Open5GS | free5GC |
 | --- | --- | --- |
-| AF_PACKET | OK | NG |
+| Simple Switch | OK | NG |
 | eBPF/XDP | OK | OK |
 
 ---
@@ -30,9 +30,9 @@ This briefly describes the steps and configuration to build and install [OAI-CN5
   - [Build and Install OAI-CN5G-UPF](#build_install)
 - [Setup OAI-CN5G-UPF on VM-UP](#setup_up)
   - [Create configuration file](#conf)
-    - [Changes in the configuration file for AF_PACKET mode](#af_conf)
-    - [How to use Framed Routing in AF_PACKET mode](#fr)
-    - [Network settings in AF_PACKET mode](#network_settings)
+    - [Changes in the configuration file for Simple Switch mode](#ss_conf)
+    - [How to use Framed Routing in Simple Switch mode](#fr)
+    - [Network settings in Simple Switch mode](#network_settings)
   - [Note for smf.yaml of Open5GS](#open5gs)
 - [Run OAI-CN5G-UPF on VM-UP](#run)
 - [Setup Data Network Gateway on VM-DN](#setup_dn)
@@ -372,11 +372,11 @@ nfs:
       interface_name: ens21
 ```
 
-<a id="af_conf"></a>
+<a id="ss_conf"></a>
 
-#### Changes in the configuration file for AF_PACKET mode
+#### Changes in the configuration file for Simple Switch mode
 
-When running UPF in AF_PACKET mode instead of eBPF/XDP mode, change the configuration file as follows.
+When running UPF in Simple Switch mode instead of eBPF/XDP mode, change the configuration file as follows.
 ```diff
 --- config.yaml.orig    2026-02-11 21:42:22.637854645 +0900
 +++ config.yaml 2026-02-11 21:42:41.235189919 +0900
@@ -393,9 +393,9 @@ When running UPF in AF_PACKET mode instead of eBPF/XDP mode, change the configur
 
 <a id="fr"></a>
 
-#### How to use Framed Routing in AF_PACKET mode
+#### How to use Framed Routing in Simple Switch mode
 
-When using Framed Routing in AF_PACKET mode, change the configuration file as follows.
+When using Framed Routing in Simple Switch mode, change the configuration file as follows.
 ```diff
 --- config.yaml.orig    2026-02-11 21:42:22.637854645 +0900
 +++ config.yaml 2026-02-11 21:42:41.235189919 +0900
@@ -413,7 +413,7 @@ When using Framed Routing in AF_PACKET mode, change the configuration file as fo
 
 <a id="network_settings"></a>
 
-#### Network settings in AF_PACKET mode
+#### Network settings in Simple Switch mode
 
 Uncomment the next line in `/etc/sysctl.conf` and reflect it in the OS.
 ```
@@ -602,15 +602,15 @@ I would like to thank the excellent developers and all the contributors of OAI-C
 ## Sample Configurations
 
 - [Open5GS 5GC & UERANSIM UE / RAN Sample Configuration - OAI-CN5G-UPF(eBPF/XDP UPF)](https://github.com/s5uishida/open5gs_5gc_ueransim_oai_upf_sample_config)
-- [Open5GS 5GC & UERANSIM UE / RAN Sample Configuration - Framed Routing with OAI-CN5G-UPF(AF_PACKET)](https://github.com/s5uishida/open5gs_5gc_ueransim_oai_upf_framed_routing_sample_config)
+- [Open5GS 5GC & UERANSIM UE / RAN Sample Configuration - Framed Routing with OAI-CN5G-UPF(Simple Switch)](https://github.com/s5uishida/open5gs_5gc_ueransim_oai_upf_framed_routing_sample_config)
 - [free5GC 5GC & UERANSIM UE / RAN Sample Configuration - OAI-CN5G-UPF(eBPF/XDP UPF)](https://github.com/s5uishida/free5gc_ueransim_oai_upf_sample_config)
 
 <a id="changelog"></a>
 
 ## Changelog (summary)
 
-- [2026.02.11] Added support for GTP-U/UDP/IP(6) values ​​for Outer Header Removal. This makes OAI-CN5G-UPF in AF_PACKET mode to work with Open5GS SMF.
-- [2026.02.11] Added how to use AF_PACKET mode and Framed Routing.
+- [2026.02.11] Added support for GTP-U/UDP/IP(6) values ​​for Outer Header Removal. This makes OAI-CN5G-UPF in Simple Switch mode to work with Open5GS SMF.
+- [2026.02.11] Added how to use Simple Switch mode and Framed Routing.
 - [2026.02.11] Added applying `fix: Prevent UPF crash during session modification with complete rule replacement` and `fix: Resolve UPF crash after 8 concurrent sessions due to incorrect BPF map sizing`.
 - [2026.02.08] Added a patch to install `qer_tc_kernel.c.o` in the same directory as `upf`. `qer_tc_user.cpp` assumes that `qer_tc_kernel.c.o` is installed in unique `/openair-upf/bin`, so this patch changes the assumption.
 - [2026.01.31] Fixed to set QFI for downlink PDR.
