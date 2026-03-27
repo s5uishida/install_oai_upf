@@ -133,10 +133,6 @@ First, get the patches for the following merge requests of OAI-CN5G-UPF to work 
   ```
   # wget https://gitlab.eurecom.fr/oai/cn5g/oai-cn5g-upf/-/merge_requests/85.diff -O 85.patch
   ```
-- [measurement-ie.patch](https://gitlab.eurecom.fr/-/project/5331/uploads/a477009219a1535fa1f4ab85aaba422a/measurement-ie.patch) (linked [here](https://gitlab.eurecom.fr/oai/cn5g/oai-cn5g-upf/-/merge_requests/88))
-  ```
-  # wget https://gitlab.eurecom.fr/-/project/5331/uploads/a477009219a1535fa1f4ab85aaba422a/measurement-ie.patch
-  ```
 - [fix: Prevent UPF crash during session modification with complete rule replacement](https://gitlab.eurecom.fr/oai/cn5g/oai-cn5g-upf/-/merge_requests/91)
   ```
   # wget https://gitlab.eurecom.fr/oai/cn5g/oai-cn5g-upf/-/merge_requests/91.diff -O 91.patch
@@ -145,12 +141,9 @@ First, get the patches for the following merge requests of OAI-CN5G-UPF to work 
   ```
   # wget https://gitlab.eurecom.fr/oai/cn5g/oai-cn5g-upf/-/merge_requests/92.diff -O 92.patch
   ```
-
-And get a patch that fixes the missing IEs for QoS. This patch enables PFCP communication with Open5GS SMF.
-
-- [Fix: fix missing ie for QoS](https://gitlab.eurecom.fr/oai/cn5g/oai-cn5g-common-src/-/commit/bc761a86ad5e22ecaac74498e36114dc59698798)
+- [Fix: fix interoperability with 3rd party SMFs](https://gitlab.eurecom.fr/oai/cn5g/oai-cn5g-common-src/-/merge_requests/134)
   ```
-  # wget https://gitlab.eurecom.fr/oai/cn5g/oai-cn5g-common-src/-/commit/bc761a86ad5e22ecaac74498e36114dc59698798.diff -O fix_upf_qos_missing_ie.patch
+  # wget https://gitlab.eurecom.fr/oai/cn5g/oai-cn5g-common-src/-/merge_requests/134.diff -O 134.patch
   ```
 
 Also get the patches to build on Ubuntu 24.04.
@@ -240,8 +233,7 @@ Download and change to tag `v2.2.0`.
 # cd src/upf_app
 # patch SessionProgramManager.cpp < ~/SessionProgramManager.cpp.fix_datapath.patch
 # cd ../common-src
-# patch -p1 < ~/measurement-ie.patch
-# patch -p1 < ~/fix_upf_qos_missing_ie.patch
+# patch -p1 < ~/134.patch
 ```
 
 <a id="build_install"></a>
@@ -611,6 +603,7 @@ I would like to thank the excellent developers and all the contributors of OAI-C
 
 ## Changelog (summary)
 
+- [2026.03.27] Applied [Fix: fix interoperability with 3rd party SMFs](https://gitlab.eurecom.fr/oai/cn5g/oai-cn5g-common-src/-/merge_requests/134) instead of [measurement-ie.patch](https://gitlab.eurecom.fr/-/project/5331/uploads/a477009219a1535fa1f4ab85aaba422a/measurement-ie.patch) and [Fix: fix missing ie for QoS](https://gitlab.eurecom.fr/oai/cn5g/oai-cn5g-common-src/-/commit/bc761a86ad5e22ecaac74498e36114dc59698798).
 - [2026.02.11] Added support for GTP-U/UDP/IP(6) values ​​for Outer Header Removal. This makes OAI-CN5G-UPF in Simple Switch mode to work with Open5GS SMF. But, in N3 downlink packets from OAI-CN5G-UPF to gNodeB, the QFI of PDU session container in GTP-U extension header may be 0.
 - [2026.02.11] Added how to use Simple Switch mode and Framed Routing.
 - [2026.02.11] Added applying `fix: Prevent UPF crash during session modification with complete rule replacement` and `fix: Resolve UPF crash after 8 concurrent sessions due to incorrect BPF map sizing`.
