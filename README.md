@@ -123,7 +123,7 @@ If you want to use `xdpdump` command, install `xdp-tools` package.
 
 ### Get patches
 
-First, get the patches for the following merge requests of OAI-CN5G-UPF to work with free5GC.
+First, get the patches for the following merge requests of OAI-CN5G-UPF to work with Open5GS and free5GC SMF.
 
 - [fix: PFCP Session Establishment Failures with Free5GC SMF](https://gitlab.eurecom.fr/oai/cn5g/oai-cn5g-upf/-/merge_requests/88)
   ```
