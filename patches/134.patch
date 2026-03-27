@@ -1,0 +1,701 @@
+diff --git a/common/common_root_types.h b/common/common_root_types.h
+index 54e131bdcc2926ccaf5ed025d30d6092949d4924..3f7a602245e5a186aa2d7e10f4c110f45e0f312f 100644
+--- a/common/common_root_types.h
++++ b/common/common_root_types.h
+@@ -34,9 +34,17 @@ typedef uint32_t teid_t;
+ #define INVALID_TEID ((teid_t) 0x00000000)
+ #define UNASSIGNED_TEID ((teid_t) 0x00000000)
+ 
++// Common Rule IDs for PDRs, FARs, QERs,
++#define RULE_FMT "0x%" PRIx32
++
++// Common IDs
++#define ID16_FMT "0x%" PRIx16
++#define ID8_FMT "0x%" PRIx16
++
+ // SEIDs
+ typedef uint64_t seid_t;
+ #define SEID_FMT "0x%" PRIx64
++#define SEID_FMTH "0x%" PRIu64
+ #define SEID_SCAN_FMT SCNx64
+ #define INVALID_SEID ((seid_t) 0x00000000)
+ #define UNASSIGNED_SEID ((seid_t) 0x00000000)
+diff --git a/pfcp/3gpp_29.244.cpp b/pfcp/3gpp_29.244.cpp
+index 3bcf7e86e5b1d8f36905e36701dda8ab8ae178fc..804c66498220735e3ba1545e3042482c0df2ca6d 100644
+--- a/pfcp/3gpp_29.244.cpp
++++ b/pfcp/3gpp_29.244.cpp
+@@ -296,11 +296,11 @@ pfcp_ie* pfcp_ie::new_pfcp_ie_from_stream(std::istream& is) {
+         //        return ie;
+         //      }
+         //      break;
+-        //    case PFCP_IE_PFCPSMREQ_FLAGS: {
+-        //        pfcp_pfcpsmreq_flags_ie *ie = new
+-        //        pfcp_pfcpsmreq_flags_ie(tlv); ie->load_from(is); return ie;
+-        //      }
+-        //      break;
++      case PFCP_IE_PFCPSMREQ_FLAGS: {
++        pfcp_pfcpsmreq_flags_ie* ie = new pfcp_pfcpsmreq_flags_ie(tlv);
++        ie->load_from(is);
++        return ie;
++      } break;
+         //    case PFCP_IE_PFCPSRRSP_FLAGS: {
+         //        pfcp_pfcpsrrsp_flags_ie *ie = new
+         //        pfcp_pfcpsrrsp_flags_ie(tlv); ie->load_from(is); return ie;
+@@ -587,12 +587,12 @@ pfcp_ie* pfcp_ie::new_pfcp_ie_from_stream(std::istream& is) {
+         //        return ie;
+         //      }
+         //      break;
+-        //    case PFCP_IE_MEASUREMENT_INFORMATION: {
+-        //        pfcp_measurement_information_ie *ie = new
+-        //        pfcp_measurement_information_ie(tlv); ie->load_from(is);
+-        //        return ie;
+-        //      }
+-        //      break;
++      case PFCP_IE_MEASUREMENT_INFORMATION: {
++        pfcp_measurement_information_ie* ie =
++            new pfcp_measurement_information_ie(tlv);
++        ie->load_from(is);
++        return ie;
++      } break;
+         //    case PFCP_IE_NODE_REPORT_TYPE: {
+         //        pfcp_node_report_type_ie *ie = new
+         //        pfcp_node_report_type_ie(tlv); ie->load_from(is); return ie;
+diff --git a/pfcp/3gpp_29.244.hpp b/pfcp/3gpp_29.244.hpp
+index 41472d33ce03836c427bc8982e9935b6f6d58b67..0ce3f6278af51ee1c9abaac164769e4f99320971 100644
+--- a/pfcp/3gpp_29.244.hpp
++++ b/pfcp/3gpp_29.244.hpp
+@@ -2864,54 +2864,66 @@ class pfcp_apply_action_ie : public pfcp_ie {
+ //      s.set(dl_buffering_suggested_packet_count);
+ //  }
+ //};
+-////-------------------------------------
+-//// IE PFCPSMREQ_FLAGS
+-// class pfcp_pfcpsmreq_flags_ie : public pfcp_ie {
+-// public:
+-//  uint8_t todo;
+-//
+-//  //--------
+-//  pfcp_pfcpsmreq_flags_ie(const pfcp::pfcpsmreq_flags_t& b) :
+-//  pfcp_ie(PFCP_IE_PFCPSMREQ_FLAGS){
+-//    todo = 0;
+-//    tlv.set_length(1);
+-//  }
+-//  //--------
+-//  pfcp_pfcpsmreq_flags_ie() : pfcp_ie(PFCP_IE_PFCPSMREQ_FLAGS){
+-//    todo = 0;
+-//    tlv.set_length(1);
+-//  }
+-//  //--------
+-//  pfcp_pfcpsmreq_flags_ie(const pfcp_tlv& t) : pfcp_ie(t) {
+-//    todo = 0;
+-//  };
+-//  //--------
+-//  void to_core_type(pfcp::pfcpsmreq_flags_t& b) {
+-//    b.todo = todo;
+-//  }
+-//  //--------
+-//  void dump_to(std::ostream& os) {
+-//    tlv.dump_to(os);
+-//    os.write(reinterpret_cast<const char*>(&todo), sizeof(todo));
+-//  }
+-//  //--------
+-//  void load_from(std::istream& is) {
+-//    //tlv.load_from(is);
+-//    if (tlv.get_length() != 1) {
+-//      throw pfcp_tlv_bad_length_exception(tlv.type, tlv.get_length(),
+-//      __FILE__, __LINE__);
+-//    }
+-//    is.read(reinterpret_cast<char*>(&todo), sizeof(todo));
+-//  }
+-//  //--------
+-//  void to_core_type(pfcp_ies_container& s) {
+-//      pfcp::pfcpsmreq_flags_t pfcpsmreq_flags = {};
+-//      to_core_type(pfcpsmreq_flags);
+-//      s.set(pfcpsmreq_flags);
+-//  }
+-//};
+-////-------------------------------------
+-//// IE PFCPSRRSP_FLAGS
++
++//-------------------------------------
++// IE PFCPSMREQ_FLAGS
++class pfcp_pfcpsmreq_flags_ie : public pfcp_ie {
++ public:
++  uint8_t flags;
++
++  //--------
++  pfcp_pfcpsmreq_flags_ie(const pfcp::pfcpsmreq_flags_t& b)
++      : pfcp_ie(PFCP_IE_PFCPSMREQ_FLAGS) {
++    flags = 0;
++    flags |= (b.drobu & 0x01);
++    flags |= (b.sndem & 0x01) << 1;
++    flags |= (b.qaurr & 0x01) << 2;
++    tlv.set_length(1);
++  }
++
++  //--------
++  pfcp_pfcpsmreq_flags_ie() : pfcp_ie(PFCP_IE_PFCPSMREQ_FLAGS) {
++    flags = 0;
++    tlv.set_length(1);
++  }
++
++  //--------
++  pfcp_pfcpsmreq_flags_ie(const pfcp_tlv& t) : pfcp_ie(t) { flags = 0; };
++
++  //--------
++  void to_core_type(pfcp::pfcpsmreq_flags_t& b) {
++    b.drobu = flags & 0x01;
++    b.sndem = (flags >> 1) & 0x01;
++    b.qaurr = (flags >> 2) & 0x01;
++    b.spare = 0;
++  }
++
++  //--------
++  void dump_to(std::ostream& os) {
++    tlv.dump_to(os);
++    os.write(reinterpret_cast<const char*>(&flags), sizeof(flags));
++  }
++
++  //--------
++  void load_from(std::istream& is) {
++    // tlv.load_from(is);
++    if (tlv.get_length() != 1) {
++      throw pfcp_tlv_bad_length_exception(
++          tlv.type, tlv.get_length(), __FILE__, __LINE__);
++    }
++    is.read(reinterpret_cast<char*>(&flags), sizeof(flags));
++  }
++
++  //--------
++  void to_core_type(pfcp_ies_container& s) {
++    pfcp::pfcpsmreq_flags_t pfcpsmreq_flags = {};
++    to_core_type(pfcpsmreq_flags);
++    s.set(pfcpsmreq_flags);
++  }
++};
++
++//-------------------------------------
++// IE PFCPSRRSP_FLAGS
+ // class pfcp_pfcpsrrsp_flags_ie : public pfcp_ie {
+ // public:
+ //  uint8_t todo;
+@@ -5938,54 +5950,79 @@ class pfcp_dl_flow_level_marking_ie : public pfcp_ie {
+ //      s.set(error_indication_report);
+ //  }
+ //};
+-////-------------------------------------
+-//// IE MEASUREMENT_INFORMATION
+-// class pfcp_measurement_information_ie : public pfcp_ie {
+-// public:
+-//  uint8_t todo;
+-//
+-//  //--------
+-//  pfcp_measurement_information_ie(const pfcp::measurement_information_t& b) :
+-//  pfcp_ie(PFCP_IE_MEASUREMENT_INFORMATION){
+-//    todo = 0;
+-//    tlv.set_length(1);
+-//  }
+-//  //--------
+-//  pfcp_measurement_information_ie() :
+-//  pfcp_ie(PFCP_IE_MEASUREMENT_INFORMATION){
+-//    todo = 0;
+-//    tlv.set_length(1);
+-//  }
+-//  //--------
+-//  pfcp_measurement_information_ie(const pfcp_tlv& t) : pfcp_ie(t) {
+-//    todo = 0;
+-//  };
+-//  //--------
+-//  void to_core_type(pfcp::measurement_information_t& b) {
+-//    b.todo = todo;
+-//  }
+-//  //--------
+-//  void dump_to(std::ostream& os) {
+-//    tlv.dump_to(os);
+-//    os.write(reinterpret_cast<const char*>(&todo), sizeof(todo));
+-//  }
+-//  //--------
+-//  void load_from(std::istream& is) {
+-//    //tlv.load_from(is);
+-//    if (tlv.get_length() != 1) {
+-//      throw pfcp_tlv_bad_length_exception(tlv.type, tlv.get_length(),
+-//      __FILE__, __LINE__);
+-//    }
+-//    is.read(reinterpret_cast<char*>(&todo), sizeof(todo));
+-//  }
+-//  //--------
+-//  void to_core_type(pfcp_ies_container& s) {
+-//      pfcp::measurement_information_t measurement_information = {};
+-//      to_core_type(measurement_information);
+-//      s.set(measurement_information);
+-//  }
+-//};
+-////-------------------------------------
++
++//-------------------------------------
++// IE MEASUREMENT_INFORMATION
++// 3GPP TS 29.244 V18.10.0 Section 8.2.68
++// This IE provides information on the requested measurement information
++class pfcp_measurement_information_ie : public pfcp_ie {
++ public:
++  // Octet 5 flags - as per 3GPP TS 29.244 Section 8.2.68
++  union {
++    struct {
++      uint8_t mbqe : 1;   // Bit 1: Measurement Before QoS Enforcement
++      uint8_t inam : 1;   // Bit 2: Inactive Measurement
++      uint8_t radi : 1;   // Bit 3: Reduced Application Detection Information
++      uint8_t istm : 1;   // Bit 4: Immediate Start Time Metering
++      uint8_t mnop : 1;   // Bit 5: Measurement of Number of Packets
++      uint8_t sspoc : 1;  // Bit 6: Send Start Pause of Charging
++      uint8_t aspoc : 1;  // Bit 7: Applicable for Start of Pause of Charging
++      uint8_t ciam : 1;   // Bit 8: Control of Inactive Measurement
++    } bf;
++    uint8_t b;
++  } u1;
++
++  //--------
++  pfcp_measurement_information_ie() : pfcp_ie(PFCP_IE_MEASUREMENT_INFORMATION) {
++    u1.b = 0;
++    tlv.set_length(1);
++  }
++  //--------
++  pfcp_measurement_information_ie(const pfcp_tlv& t) : pfcp_ie(t) { u1.b = 0; };
++  //--------
++  void dump_to(std::ostream& os) {
++    tlv.dump_to(os);
++    os.write(reinterpret_cast<const char*>(&u1.b), sizeof(u1.b));
++  }
++  //--------
++  void load_from(std::istream& is) {
++    // tlv.load_from(is); - already loaded in new_pfcp_ie_from_stream
++    // 3GPP TS 29.244 Section 8.2.68: minimum length is 1 byte (flags)
++    // Additional octets may be present for future extensions
++    if (tlv.get_length() < 1) {
++      throw pfcp_tlv_bad_length_exception(
++          tlv.type, tlv.get_length(), __FILE__, __LINE__);
++    }
++    // Read the mandatory flags byte
++    is.read(reinterpret_cast<char*>(&u1.b), sizeof(u1.b));
++
++    // Skip any additional octets if length > 1 (for future extensions)
++    // 3GPP TS 29.244 Section 8.2.68: "Octets 6 to (n+4) present only if
++    // explicitly specified"
++    if (tlv.get_length() > 1) {
++      is.seekg(tlv.get_length() - 1, std::ios_base::cur);
++    }
++  }
++  //--------
++  void to_core_type(pfcp_ies_container& s) {
++    // For now, we just parse and acknowledge the IE
++    // Future implementations can use the flags for measurement control
++  }
++  // void to_core_type(pfcp_ies_container& s) {
++  //   pfcp::measurement_information_t measurement_information = {};
++  //   to_core_type(measurement_information);
++  //   s.set(measurement_information);
++  // }
++
++  // void to_core_type(pfcp::measurement_information_t& b) {
++  //   u1.b       = 0;
++  //   u1.bf.mbqe = b.mbqe;
++  //   u1.bf.inam = b.inam;
++  //   u1.bf.radi = b.radi;
++  // }
++};
++
++//-------------------------------------
+ // IE NODE_REPORT_TYPE
+ class pfcp_node_report_type_ie : public pfcp_ie {
+  public:
+diff --git a/pfcp/msg_pfcp.hpp b/pfcp/msg_pfcp.hpp
+index 0498ffdae04e7057145b796dccc0736faaed7525..03b872755fd4610d84ea802f363dfad7968b7acc 100644
+--- a/pfcp/msg_pfcp.hpp
++++ b/pfcp/msg_pfcp.hpp
+@@ -1692,7 +1692,7 @@ class pdi : public pfcp::pfcp_ies_container {
+   std::pair<bool, std::vector<pfcp::framed_route_t>> framed_route;
+   std::pair<bool, pfcp::framed_routing_t> framed_routing;
+   std::pair<bool, pfcp::framed_ipv6_route_t> framed_ipv6_route;
+-  std::pair<bool, pfcp::_3gpp_interface_type_t> _3gpp_interface_type;
++  std::pair<bool, pfcp::_3gpp_interface_type_t> source_interface_type;
+ 
+   pdi()
+       : source_interface(),
+@@ -1707,7 +1707,8 @@ class pdi : public pfcp::pfcp_ies_container {
+         qfi(),
+         framed_route(),
+         framed_routing(),
+-        framed_ipv6_route() {}
++        framed_ipv6_route(),
++        source_interface_type() {}
+ 
+   pdi(const pdi& p)
+       : source_interface(p.source_interface),
+@@ -1722,7 +1723,8 @@ class pdi : public pfcp::pfcp_ies_container {
+         qfi(p.qfi),
+         framed_route(p.framed_route),
+         framed_routing(p.framed_routing),
+-        framed_ipv6_route(p.framed_ipv6_route) {}
++        framed_ipv6_route(p.framed_ipv6_route),
++        source_interface_type(p.source_interface_type) {}
+ 
+   // virtual ~pdi() {};
+   void set(const pfcp::source_interface_t& v) {
+@@ -1778,8 +1780,8 @@ class pdi : public pfcp::pfcp_ies_container {
+     framed_ipv6_route.second = v;
+   }
+   void set(const pfcp::_3gpp_interface_type_t& v) {
+-    _3gpp_interface_type.first  = true;
+-    _3gpp_interface_type.second = v;
++    source_interface_type.first  = true;
++    source_interface_type.second = v;
+   }
+ 
+   bool get(pfcp::source_interface_t& v) const {
+@@ -1874,8 +1876,8 @@ class pdi : public pfcp::pfcp_ies_container {
+     return false;
+   }
+   bool get(pfcp::_3gpp_interface_type_t& v) const {
+-    if (_3gpp_interface_type.first) {
+-      v = _3gpp_interface_type.second;
++    if (source_interface_type.first) {
++      v = source_interface_type.second;
+       return true;
+     }
+     return false;
+@@ -1894,6 +1896,8 @@ class create_pdr : public pfcp::pfcp_ies_container {
+   std::pair<bool, pfcp::urr_id_t> urr_id;
+   std::pair<bool, pfcp::qer_id_t> qer_id;
+   std::pair<bool, pfcp::activate_predefined_rules_t> activate_predefined_rules;
++  // std::pair<bool, std::vector<pfcp::activate_predefined_rules_t>>
++  // activate_predefined_rules;
+ 
+   create_pdr()
+       : pdr_id(),
+@@ -2013,32 +2017,38 @@ class update_forwarding_parameters : public pfcp::pfcp_ies_container {
+  public:
+   std::pair<bool, pfcp::destination_interface_t> destination_interface;
+   std::pair<bool, pfcp::network_instance_t> network_instance;
++  std::pair<bool, pfcp::redirect_information_t> redirect_inforamtion;
+   std::pair<bool, pfcp::outer_header_creation_t> outer_header_creation;
+   std::pair<bool, pfcp::transport_level_marking_t> transport_level_marking;
+   std::pair<bool, pfcp::forwarding_policy_t> forwarding_policy;
+   std::pair<bool, pfcp::header_enrichment_t> header_enrichment;
+   std::pair<bool, pfcp::pfcpsmreq_flags_t> pfcpsmreq_flags;
+   std::pair<bool, pfcp::traffic_endpoint_id_t> linked_traffic_endpoint_id;
++  std::pair<bool, pfcp::_3gpp_interface_type_t> destination_interface_type;
+ 
+   update_forwarding_parameters()
+       : destination_interface(),
+         network_instance(),
++        redirect_inforamtion(),
+         outer_header_creation(),
+         transport_level_marking(),
+         forwarding_policy(),
+         header_enrichment(),
+         pfcpsmreq_flags(),
+-        linked_traffic_endpoint_id() {}
++        linked_traffic_endpoint_id(),
++        destination_interface_type() {}
+ 
+   update_forwarding_parameters(const update_forwarding_parameters& u)
+       : destination_interface(u.destination_interface),
+         network_instance(u.network_instance),
++        redirect_inforamtion(u.redirect_inforamtion),
+         outer_header_creation(u.outer_header_creation),
+         transport_level_marking(u.transport_level_marking),
+         forwarding_policy(u.forwarding_policy),
+         header_enrichment(u.header_enrichment),
+         pfcpsmreq_flags(u.pfcpsmreq_flags),
+-        linked_traffic_endpoint_id(u.linked_traffic_endpoint_id) {}
++        linked_traffic_endpoint_id(u.linked_traffic_endpoint_id),
++        destination_interface_type(u.destination_interface_type) {}
+ 
+   // virtual ~update_forwarding_parameters() {};
+   void set(const pfcp::destination_interface_t& v) {
+@@ -2049,6 +2059,10 @@ class update_forwarding_parameters : public pfcp::pfcp_ies_container {
+     network_instance.first  = true;
+     network_instance.second = v;
+   }
++  void set(const pfcp::redirect_information_t& v) {
++    redirect_inforamtion.first  = true;
++    redirect_inforamtion.second = v;
++  }
+   void set(const pfcp::outer_header_creation_t& v) {
+     outer_header_creation.first  = true;
+     outer_header_creation.second = v;
+@@ -2073,6 +2087,10 @@ class update_forwarding_parameters : public pfcp::pfcp_ies_container {
+     linked_traffic_endpoint_id.first  = true;
+     linked_traffic_endpoint_id.second = v;
+   }
++  void set(const pfcp::_3gpp_interface_type_t& v) {
++    destination_interface_type.first  = true;
++    destination_interface_type.second = v;
++  }
+ 
+   bool get(pfcp::destination_interface_t& v) const {
+     if (destination_interface.first) {
+@@ -2088,6 +2106,13 @@ class update_forwarding_parameters : public pfcp::pfcp_ies_container {
+     }
+     return false;
+   }
++  bool get(pfcp::redirect_information_t& v) const {
++    if (redirect_inforamtion.first) {
++      v = redirect_inforamtion.second;
++      return true;
++    }
++    return false;
++  }
+   bool get(pfcp::outer_header_creation_t& v) const {
+     if (outer_header_creation.first) {
+       v = outer_header_creation.second;
+@@ -2130,6 +2155,13 @@ class update_forwarding_parameters : public pfcp::pfcp_ies_container {
+     }
+     return false;
+   }
++  bool get(pfcp::_3gpp_interface_type_t& v) const {
++    if (destination_interface_type.first) {
++      v = destination_interface_type.second;
++      return true;
++    }
++    return false;
++  }
+ };
+ 
+ //------------------------------------------------------------------------------
+@@ -2145,6 +2177,7 @@ class forwarding_parameters : public pfcp::pfcp_ies_container {
+   std::pair<bool, pfcp::header_enrichment_t> header_enrichment;
+   std::pair<bool, pfcp::traffic_endpoint_id_t> linked_traffic_endpoint_id;
+   std::pair<bool, pfcp::proxying_t> proxying;
++  std::pair<bool, pfcp::_3gpp_interface_type_t> destination_interface_type;
+ 
+   forwarding_parameters()
+       : destination_interface(),
+@@ -2155,7 +2188,8 @@ class forwarding_parameters : public pfcp::pfcp_ies_container {
+         forwarding_policy(),
+         header_enrichment(),
+         linked_traffic_endpoint_id(),
+-        proxying() {}
++        proxying(),
++        destination_interface_type() {}
+ 
+   forwarding_parameters(const forwarding_parameters& f)
+       : destination_interface(f.destination_interface),
+@@ -2166,17 +2200,21 @@ class forwarding_parameters : public pfcp::pfcp_ies_container {
+         forwarding_policy(f.forwarding_policy),
+         header_enrichment(f.header_enrichment),
+         linked_traffic_endpoint_id(f.linked_traffic_endpoint_id),
+-        proxying(f.proxying) {}
++        proxying(f.proxying),
++        destination_interface_type(f.destination_interface_type) {}
+ 
+   bool update(const update_forwarding_parameters& u) {
+     if (u.destination_interface.first) set(u.destination_interface.second);
+     if (u.network_instance.first) set(u.network_instance.second);
++    if (u.redirect_inforamtion.first) set(u.redirect_inforamtion.second);
+     if (u.outer_header_creation.first) set(u.outer_header_creation.second);
+     if (u.transport_level_marking.first) set(u.transport_level_marking.second);
+     if (u.forwarding_policy.first) set(u.forwarding_policy.second);
+     if (u.header_enrichment.first) set(u.header_enrichment.second);
+     if (u.linked_traffic_endpoint_id.first)
+       set(u.linked_traffic_endpoint_id.second);
++    if (u.destination_interface_type.first)
++      set(u.destination_interface_type.second);
+     return true;
+   }
+ 
+@@ -2217,6 +2255,10 @@ class forwarding_parameters : public pfcp::pfcp_ies_container {
+     proxying.first  = true;
+     proxying.second = v;
+   }
++  void set(const pfcp::_3gpp_interface_type_t& v) {
++    destination_interface_type.first  = true;
++    destination_interface_type.second = v;
++  }
+ 
+   bool get(pfcp::destination_interface_t& v) const {
+     if (destination_interface.first) {
+@@ -2281,6 +2323,13 @@ class forwarding_parameters : public pfcp::pfcp_ies_container {
+     }
+     return false;
+   }
++  bool get(pfcp::_3gpp_interface_type_t& v) const {
++    if (destination_interface_type.first) {
++      v = destination_interface_type.second;
++      return true;
++    }
++    return false;
++  }
+ };
+ 
+ //------------------------------------------------------------------------------
+@@ -3036,6 +3085,8 @@ class create_qer : public pfcp::pfcp_ies_container {
+   std::pair<bool, pfcp::dl_flow_level_marking_t> dl_flow_level_marking;
+   std::pair<bool, pfcp::qfi_t> qos_flow_identifier;
+   std::pair<bool, pfcp::rqi_t> reflective_qos;
++  std::pair<bool, pfcp::paging_policy_indicator_t> paging_policy_indicator;
++  std::pair<bool, pfcp::averaging_window_t> averaging_window;
+ 
+   create_qer()
+       : qer_id(),
+@@ -3046,7 +3097,9 @@ class create_qer : public pfcp::pfcp_ies_container {
+         packet_rate(),
+         dl_flow_level_marking(),
+         qos_flow_identifier(),
+-        reflective_qos() {}
++        reflective_qos(),
++        paging_policy_indicator(),
++        averaging_window() {}
+ 
+   create_qer(const create_qer& c)
+       : qer_id(c.qer_id),
+@@ -3057,7 +3110,9 @@ class create_qer : public pfcp::pfcp_ies_container {
+         packet_rate(c.packet_rate),
+         dl_flow_level_marking(c.dl_flow_level_marking),
+         qos_flow_identifier(c.qos_flow_identifier),
+-        reflective_qos(c.reflective_qos) {}
++        reflective_qos(c.reflective_qos),
++        paging_policy_indicator(c.paging_policy_indicator),
++        averaging_window(c.averaging_window) {}
+ 
+   // virtual ~create_qer() {};
+   void set(const pfcp::qer_id_t& v) {
+@@ -3096,6 +3151,14 @@ class create_qer : public pfcp::pfcp_ies_container {
+     reflective_qos.first  = true;
+     reflective_qos.second = v;
+   }
++  void set(const pfcp::paging_policy_indicator_t& v) {
++    paging_policy_indicator.first  = true;
++    paging_policy_indicator.second = v;
++  }
++  void set(const pfcp::averaging_window_t& v) {
++    averaging_window.first  = true;
++    averaging_window.second = v;
++  }
+ 
+   bool get(pfcp::qer_id_t& v) const {
+     if (qer_id.first) {
+@@ -3160,6 +3223,20 @@ class create_qer : public pfcp::pfcp_ies_container {
+     }
+     return false;
+   }
++  bool get(pfcp::paging_policy_indicator_t& v) const {
++    if (paging_policy_indicator.first) {
++      v = paging_policy_indicator.second;
++      return true;
++    }
++    return false;
++  }
++  bool get(pfcp::averaging_window_t& v) const {
++    if (averaging_window.first) {
++      v = averaging_window.second;
++      return true;
++    }
++    return false;
++  }
+ };
+ 
+ //------------------------------------------------------------------------------
+@@ -3614,6 +3691,25 @@ class update_pdr : public pfcp::pfcp_ies_container {
+     }
+     return false;
+   }
++
++  // Vector getters for predefined rules
++  const std::vector<pfcp::activate_predefined_rules_t>&
++  get_activate_predefined_rules() const {
++    return activate_predefined_rules;
++  }
++
++  const std::vector<pfcp::deactivate_predefined_rules_t>&
++  get_deactivate_predefined_rules() const {
++    return deactivate_predefined_rules;
++  }
++
++  bool has_activate_predefined_rules() const {
++    return !activate_predefined_rules.empty();
++  }
++
++  bool has_deactivate_predefined_rules() const {
++    return !deactivate_predefined_rules.empty();
++  }
+ };
+ 
+ //------------------------------------------------------------------------------
+@@ -4059,6 +4155,8 @@ class update_qer : public pfcp::pfcp_ies_container {
+   std::pair<bool, pfcp::dl_flow_level_marking_t> dl_flow_level_marking;
+   std::pair<bool, pfcp::qfi_t> qos_flow_identifier;
+   std::pair<bool, pfcp::rqi_t> reflective_qos;
++  std::pair<bool, pfcp::paging_policy_indicator_t> paging_policy_indicator;
++  std::pair<bool, pfcp::averaging_window_t> averaging_window;
+ 
+   update_qer()
+       : qer_id(),
+@@ -4069,18 +4167,22 @@ class update_qer : public pfcp::pfcp_ies_container {
+         packet_rate(),
+         dl_flow_level_marking(),
+         qos_flow_identifier(),
+-        reflective_qos() {}
++        reflective_qos(),
++        paging_policy_indicator(),
++        averaging_window() {}
+ 
+   update_qer(const update_qer& u) {
+-    qer_id                = u.qer_id;
+-    qer_correlation_id    = u.qer_correlation_id;
+-    gate_status           = u.gate_status;
+-    maximum_bitrate       = u.maximum_bitrate;
+-    guaranteed_bitrate    = u.guaranteed_bitrate;
+-    packet_rate           = u.packet_rate;
+-    dl_flow_level_marking = u.dl_flow_level_marking;
+-    qos_flow_identifier   = u.qos_flow_identifier;
+-    reflective_qos        = u.reflective_qos;
++    qer_id                  = u.qer_id;
++    qer_correlation_id      = u.qer_correlation_id;
++    gate_status             = u.gate_status;
++    maximum_bitrate         = u.maximum_bitrate;
++    guaranteed_bitrate      = u.guaranteed_bitrate;
++    packet_rate             = u.packet_rate;
++    dl_flow_level_marking   = u.dl_flow_level_marking;
++    qos_flow_identifier     = u.qos_flow_identifier;
++    reflective_qos          = u.reflective_qos;
++    paging_policy_indicator = u.paging_policy_indicator;
++    averaging_window        = u.averaging_window;
+   }
+ 
+   // virtual ~update_qer() {};
+@@ -4120,6 +4222,14 @@ class update_qer : public pfcp::pfcp_ies_container {
+     reflective_qos.first  = true;
+     reflective_qos.second = v;
+   }
++  void set(const pfcp::paging_policy_indicator_t& v) {
++    paging_policy_indicator.first  = true;
++    paging_policy_indicator.second = v;
++  }
++  void set(const pfcp::averaging_window_t& v) {
++    averaging_window.first  = true;
++    averaging_window.second = v;
++  }
+ 
+   bool get(pfcp::qer_id_t& v) const {
+     if (qer_id.first) {
+@@ -4184,6 +4294,20 @@ class update_qer : public pfcp::pfcp_ies_container {
+     }
+     return false;
+   }
++  bool get(pfcp::paging_policy_indicator_t& v) const {
++    if (paging_policy_indicator.first) {
++      v = paging_policy_indicator.second;
++      return true;
++    }
++    return false;
++  }
++  bool get(pfcp::averaging_window_t& v) const {
++    if (averaging_window.first) {
++      v = averaging_window.second;
++      return true;
++    }
++    return false;
++  }
+ };
+ 
+ //------------------------------------------------------------------------------
