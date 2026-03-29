@@ -34,6 +34,7 @@ This briefly describes the steps and configuration to build and install [OAI-CN5
   - [Create configuration file](#conf)
     - [Changes in the configuration file for Simple Switch mode](#ss_conf)
     - [How to use Framed Routing in Simple Switch mode](#fr)
+    - [Prevent performance degradation in Simple Switch mode](#performance)
     - [Network settings in Simple Switch mode](#network_settings)
   - [Note for smf.yaml of Open5GS](#open5gs)
 - [Run OAI-CN5G-UPF on VM-UP](#run)
@@ -399,6 +400,18 @@ When using Framed Routing in Simple Switch mode, change the configuration file a
    upf_info:
 ```
 **According to [this](https://gitlab.eurecom.fr/oai/cn5g/oai-cn5g-upf/-/blob/master/CHANGELOG.md#v220----december-2025), Framed Routing does not yet work in eBPF/XDP mode.**
+
+<a id="performance"></a>
+
+#### Prevent performance degradation in Simple Switch mode
+
+To prevent performance degradation in Simple Switch mode, reduce log output by changing the log level as follows.
+
+`openair-upf/config.yaml`
+```yaml
+log_level:
+  general: warning
+```
 
 <a id="network_settings"></a>
 
