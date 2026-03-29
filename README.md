@@ -154,12 +154,12 @@ Additionally, fix to set QFI for downlink PDR and support GTP-U/UDP/IP(6) value 
   # wget https://raw.githubusercontent.com/s5uishida/install_oai_upf/refs/heads/main/patches/feat_ohr_gtpu_udp_ip.patch
   ```
 
-Then, get a patch that assumes that `qer_tc_kernel.c.o` is in the same directory as `upf`.
-`qer_tc_user.cpp` assumes that `qer_tc_kernel.c.o` is installed in unique `/openair-upf/bin`, so this patch will change the assumption.
+Then, get a patch that assumes that `qer_tc_kern.c.o` is in the same directory as `upf`.
+`qer_tc_user.cpp` assumes that `qer_tc_kern.c.o` is installed in unique `/openair-upf/bin`, so this patch will change the assumption.
 
-- [Change the installation location of `qer_tc_kernel.c.o`](https://github.com/s5uishida/install_oai_upf/blob/main/patches/install_qer_tc_kernel_c_o.patch)
+- [Change the installation location of `qer_tc_kern.c.o`](https://github.com/s5uishida/install_oai_upf/blob/main/patches/install_qer_tc_kern_c_o.patch)
   ```
-  # wget https://raw.githubusercontent.com/s5uishida/install_oai_upf/refs/heads/main/patches/install_qer_tc_kernel_c_o.patch
+  # wget https://raw.githubusercontent.com/s5uishida/install_oai_upf/refs/heads/main/patches/install_qer_tc_kern_c_o.patch
   ```
 
 Finally, get a patch to fix some build errors.
