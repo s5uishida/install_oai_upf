@@ -1,0 +1,22 @@
+diff -urN oai-cn5g-upf.orig/src/upf_app/CMakeLists.txt oai-cn5g-upf/src/upf_app/CMakeLists.txt
+--- oai-cn5g-upf.orig/src/upf_app/CMakeLists.txt	2026-03-28 18:51:26.210520599 +0900
++++ oai-cn5g-upf/src/upf_app/CMakeLists.txt	2026-03-28 19:04:55.310854629 +0900
+@@ -1,5 +1,7 @@
+ include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/toolchain.cmake)
+ 
++add_compile_options("-mcpu=v4")
++
+ add_subdirectory(kernel)
+ include_directories(${SRC_TOP_DIR}/upf_app/kernel/bpf_pfcp)
+ include_directories(${SRC_TOP_DIR}/upf_app/simpleswitch)
+diff -urN oai-cn5g-upf.orig/src/upf_app/control/SessionManager.h oai-cn5g-upf/src/upf_app/control/SessionManager.h
+--- oai-cn5g-upf.orig/src/upf_app/control/SessionManager.h	2026-03-28 18:51:26.218520675 +0900
++++ oai-cn5g-upf/src/upf_app/control/SessionManager.h	2026-03-28 19:04:05.365462466 +0900
+@@ -42,6 +42,7 @@
+ #ifndef SESSION_MANAGER_H_
+ #define SESSION_MANAGER_H_
+ 
++#include <string>
+ #include <cstdint>
+ #include <memory>
+ #include <mutex>

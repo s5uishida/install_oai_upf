@@ -1,0 +1,31 @@
+diff -urN oai-cn5g-upf.orig/build/scripts/build_upf oai-cn5g-upf/build/scripts/build_upf
+--- oai-cn5g-upf.orig/build/scripts/build_upf	2026-03-28 18:51:26.209520589 +0900
++++ oai-cn5g-upf/build/scripts/build_upf	2026-03-28 18:56:55.158353597 +0900
+@@ -264,6 +264,7 @@
+   # For daemon should not be group writable
+   $SUDO chmod 755 $OPENAIRCN_DIR/build/upf/build/upf
+   $SUDO cp -upv $OPENAIRCN_DIR/build/upf/build/upf $INSTALL_DIR && $SUDO chmod 755 $INSTALL_DIR/upf && echo_success "upf installed"
++  $SUDO cp -upv $OPENAIRCN_DIR/build/upf/build/upf_app/kernel/CMakeFiles/qer_tc.dir/tc/qer_tc_kern.c.o $INSTALL_DIR && echo_success "qer_tc_kern.c.o installed"
+   return 0
+ }
+ 
+diff -urN oai-cn5g-upf.orig/src/upf_app/user/qer_tc_user.cpp oai-cn5g-upf/src/upf_app/user/qer_tc_user.cpp
+--- oai-cn5g-upf.orig/src/upf_app/user/qer_tc_user.cpp	2026-03-28 18:51:26.236520847 +0900
++++ oai-cn5g-upf/src/upf_app/user/qer_tc_user.cpp	2026-03-28 18:57:16.054489647 +0900
+@@ -437,10 +437,14 @@
+     if (NoTcFilterBpf(gtp_iface)) {
+       Logger::upf_app().info(
+           "Attach Section tc_filter_traffic to gtp interface");
++      char result[PATH_MAX];
++      ssize_t count = readlink("/proc/self/exe", result, PATH_MAX);
++      std::string fullPath(result, count);
+       cmd = fmt::format(
+           "tc filter add dev {} parent 1:0 protocol ip bpf obj "
+-          "/openair-upf/bin/qer_tc_kern.c.o classid 1: direct-action",
+-          gtp_iface.c_str());
++          "{}/qer_tc_kern.c.o classid 1: direct-action",
++          gtp_iface.c_str(),
++          std::filesystem::path(fullPath).parent_path().string());
+       if (system(cmd.c_str()) != 0) {
+         Logger::upf_app().error("Failed to attach TC BPF filter");
+         has_errors = true;
