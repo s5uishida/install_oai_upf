@@ -164,7 +164,7 @@ Then, get a patch that assumes that `qer_tc_kern.c.o` is in the same directory a
 
 Finally, get a patch to fix some build errors.
 
-- [Fix the build errors](https://raw.githubusercontent.com/s5uishida/install_oai_upf/refs/heads/main/patches/fix_build_error.patch)
+- [Fix some build errors](https://raw.githubusercontent.com/s5uishida/install_oai_upf/refs/heads/main/patches/fix_build_error.patch)
   ```
   # wget https://raw.githubusercontent.com/s5uishida/install_oai_upf/refs/heads/main/patches/fix_build_error.patch
   ```
