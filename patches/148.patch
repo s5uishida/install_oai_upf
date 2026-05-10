@@ -1,8 +1,8 @@
 diff --git a/common/common_root_types.h b/common/common_root_types.h
-index 54e131bdcc2926ccaf5ed025d30d6092949d4924..3f7a602245e5a186aa2d7e10f4c110f45e0f312f 100644
+index 70a4a471f2ad8bc6508fcc15f4049e3b6a544dfb..3ac929baeb2da0896172d9c63fdd7cd85e32fbec 100644
 --- a/common/common_root_types.h
 +++ b/common/common_root_types.h
-@@ -34,9 +34,17 @@ typedef uint32_t teid_t;
+@@ -17,9 +17,17 @@ typedef uint32_t teid_t;
  #define INVALID_TEID ((teid_t) 0x00000000)
  #define UNASSIGNED_TEID ((teid_t) 0x00000000)
  
@@ -21,10 +21,10 @@ index 54e131bdcc2926ccaf5ed025d30d6092949d4924..3f7a602245e5a186aa2d7e10f4c110f4
  #define INVALID_SEID ((seid_t) 0x00000000)
  #define UNASSIGNED_SEID ((seid_t) 0x00000000)
 diff --git a/pfcp/3gpp_29.244.cpp b/pfcp/3gpp_29.244.cpp
-index 3bcf7e86e5b1d8f36905e36701dda8ab8ae178fc..804c66498220735e3ba1545e3042482c0df2ca6d 100644
+index 3adea5a14413301ca1aecb436ba5b4817235680a..f720a850d271896b3668611c3e187e85749d73b7 100644
 --- a/pfcp/3gpp_29.244.cpp
 +++ b/pfcp/3gpp_29.244.cpp
-@@ -296,11 +296,11 @@ pfcp_ie* pfcp_ie::new_pfcp_ie_from_stream(std::istream& is) {
+@@ -279,11 +279,11 @@ pfcp_ie* pfcp_ie::new_pfcp_ie_from_stream(std::istream& is) {
          //        return ie;
          //      }
          //      break;
@@ -41,7 +41,7 @@ index 3bcf7e86e5b1d8f36905e36701dda8ab8ae178fc..804c66498220735e3ba1545e3042482c
          //    case PFCP_IE_PFCPSRRSP_FLAGS: {
          //        pfcp_pfcpsrrsp_flags_ie *ie = new
          //        pfcp_pfcpsrrsp_flags_ie(tlv); ie->load_from(is); return ie;
-@@ -587,12 +587,12 @@ pfcp_ie* pfcp_ie::new_pfcp_ie_from_stream(std::istream& is) {
+@@ -570,12 +570,12 @@ pfcp_ie* pfcp_ie::new_pfcp_ie_from_stream(std::istream& is) {
          //        return ie;
          //      }
          //      break;
@@ -61,10 +61,10 @@ index 3bcf7e86e5b1d8f36905e36701dda8ab8ae178fc..804c66498220735e3ba1545e3042482c
          //        pfcp_node_report_type_ie *ie = new
          //        pfcp_node_report_type_ie(tlv); ie->load_from(is); return ie;
 diff --git a/pfcp/3gpp_29.244.hpp b/pfcp/3gpp_29.244.hpp
-index 41472d33ce03836c427bc8982e9935b6f6d58b67..0ce3f6278af51ee1c9abaac164769e4f99320971 100644
+index e773b96e2a012e25176530d3324c4e6f34404b5b..7a0b024a64a990d26bfd9bcf7781ac4913437356 100644
 --- a/pfcp/3gpp_29.244.hpp
 +++ b/pfcp/3gpp_29.244.hpp
-@@ -2864,54 +2864,66 @@ class pfcp_apply_action_ie : public pfcp_ie {
+@@ -2847,54 +2847,66 @@ class pfcp_apply_action_ie : public pfcp_ie {
  //      s.set(dl_buffering_suggested_packet_count);
  //  }
  //};
@@ -179,7 +179,7 @@ index 41472d33ce03836c427bc8982e9935b6f6d58b67..0ce3f6278af51ee1c9abaac164769e4f
  // class pfcp_pfcpsrrsp_flags_ie : public pfcp_ie {
  // public:
  //  uint8_t todo;
-@@ -5938,54 +5950,79 @@ class pfcp_dl_flow_level_marking_ie : public pfcp_ie {
+@@ -5921,54 +5933,79 @@ class pfcp_dl_flow_level_marking_ie : public pfcp_ie {
  //      s.set(error_indication_report);
  //  }
  //};
@@ -308,10 +308,10 @@ index 41472d33ce03836c427bc8982e9935b6f6d58b67..0ce3f6278af51ee1c9abaac164769e4f
  class pfcp_node_report_type_ie : public pfcp_ie {
   public:
 diff --git a/pfcp/msg_pfcp.hpp b/pfcp/msg_pfcp.hpp
-index 0498ffdae04e7057145b796dccc0736faaed7525..03b872755fd4610d84ea802f363dfad7968b7acc 100644
+index 07333b9c2b1c9bf313684581fff5bfe14634c818..a945b9a87a1136dd36761901300b2bbe30d38d5c 100644
 --- a/pfcp/msg_pfcp.hpp
 +++ b/pfcp/msg_pfcp.hpp
-@@ -1692,7 +1692,7 @@ class pdi : public pfcp::pfcp_ies_container {
+@@ -1675,7 +1675,7 @@ class pdi : public pfcp::pfcp_ies_container {
    std::pair<bool, std::vector<pfcp::framed_route_t>> framed_route;
    std::pair<bool, pfcp::framed_routing_t> framed_routing;
    std::pair<bool, pfcp::framed_ipv6_route_t> framed_ipv6_route;
@@ -320,7 +320,7 @@ index 0498ffdae04e7057145b796dccc0736faaed7525..03b872755fd4610d84ea802f363dfad7
  
    pdi()
        : source_interface(),
-@@ -1707,7 +1707,8 @@ class pdi : public pfcp::pfcp_ies_container {
+@@ -1690,7 +1690,8 @@ class pdi : public pfcp::pfcp_ies_container {
          qfi(),
          framed_route(),
          framed_routing(),
@@ -330,7 +330,7 @@ index 0498ffdae04e7057145b796dccc0736faaed7525..03b872755fd4610d84ea802f363dfad7
  
    pdi(const pdi& p)
        : source_interface(p.source_interface),
-@@ -1722,7 +1723,8 @@ class pdi : public pfcp::pfcp_ies_container {
+@@ -1705,7 +1706,8 @@ class pdi : public pfcp::pfcp_ies_container {
          qfi(p.qfi),
          framed_route(p.framed_route),
          framed_routing(p.framed_routing),
@@ -340,7 +340,7 @@ index 0498ffdae04e7057145b796dccc0736faaed7525..03b872755fd4610d84ea802f363dfad7
  
    // virtual ~pdi() {};
    void set(const pfcp::source_interface_t& v) {
-@@ -1778,8 +1780,8 @@ class pdi : public pfcp::pfcp_ies_container {
+@@ -1761,8 +1763,8 @@ class pdi : public pfcp::pfcp_ies_container {
      framed_ipv6_route.second = v;
    }
    void set(const pfcp::_3gpp_interface_type_t& v) {
@@ -351,7 +351,7 @@ index 0498ffdae04e7057145b796dccc0736faaed7525..03b872755fd4610d84ea802f363dfad7
    }
  
    bool get(pfcp::source_interface_t& v) const {
-@@ -1874,8 +1876,8 @@ class pdi : public pfcp::pfcp_ies_container {
+@@ -1857,8 +1859,8 @@ class pdi : public pfcp::pfcp_ies_container {
      return false;
    }
    bool get(pfcp::_3gpp_interface_type_t& v) const {
@@ -362,7 +362,7 @@ index 0498ffdae04e7057145b796dccc0736faaed7525..03b872755fd4610d84ea802f363dfad7
        return true;
      }
      return false;
-@@ -1894,6 +1896,8 @@ class create_pdr : public pfcp::pfcp_ies_container {
+@@ -1877,6 +1879,8 @@ class create_pdr : public pfcp::pfcp_ies_container {
    std::pair<bool, pfcp::urr_id_t> urr_id;
    std::pair<bool, pfcp::qer_id_t> qer_id;
    std::pair<bool, pfcp::activate_predefined_rules_t> activate_predefined_rules;
@@ -371,7 +371,7 @@ index 0498ffdae04e7057145b796dccc0736faaed7525..03b872755fd4610d84ea802f363dfad7
  
    create_pdr()
        : pdr_id(),
-@@ -2013,32 +2017,38 @@ class update_forwarding_parameters : public pfcp::pfcp_ies_container {
+@@ -1996,32 +2000,38 @@ class update_forwarding_parameters : public pfcp::pfcp_ies_container {
   public:
    std::pair<bool, pfcp::destination_interface_t> destination_interface;
    std::pair<bool, pfcp::network_instance_t> network_instance;
@@ -412,7 +412,7 @@ index 0498ffdae04e7057145b796dccc0736faaed7525..03b872755fd4610d84ea802f363dfad7
  
    // virtual ~update_forwarding_parameters() {};
    void set(const pfcp::destination_interface_t& v) {
-@@ -2049,6 +2059,10 @@ class update_forwarding_parameters : public pfcp::pfcp_ies_container {
+@@ -2032,6 +2042,10 @@ class update_forwarding_parameters : public pfcp::pfcp_ies_container {
      network_instance.first  = true;
      network_instance.second = v;
    }
@@ -423,7 +423,7 @@ index 0498ffdae04e7057145b796dccc0736faaed7525..03b872755fd4610d84ea802f363dfad7
    void set(const pfcp::outer_header_creation_t& v) {
      outer_header_creation.first  = true;
      outer_header_creation.second = v;
-@@ -2073,6 +2087,10 @@ class update_forwarding_parameters : public pfcp::pfcp_ies_container {
+@@ -2056,6 +2070,10 @@ class update_forwarding_parameters : public pfcp::pfcp_ies_container {
      linked_traffic_endpoint_id.first  = true;
      linked_traffic_endpoint_id.second = v;
    }
@@ -434,7 +434,7 @@ index 0498ffdae04e7057145b796dccc0736faaed7525..03b872755fd4610d84ea802f363dfad7
  
    bool get(pfcp::destination_interface_t& v) const {
      if (destination_interface.first) {
-@@ -2088,6 +2106,13 @@ class update_forwarding_parameters : public pfcp::pfcp_ies_container {
+@@ -2071,6 +2089,13 @@ class update_forwarding_parameters : public pfcp::pfcp_ies_container {
      }
      return false;
    }
@@ -448,7 +448,7 @@ index 0498ffdae04e7057145b796dccc0736faaed7525..03b872755fd4610d84ea802f363dfad7
    bool get(pfcp::outer_header_creation_t& v) const {
      if (outer_header_creation.first) {
        v = outer_header_creation.second;
-@@ -2130,6 +2155,13 @@ class update_forwarding_parameters : public pfcp::pfcp_ies_container {
+@@ -2113,6 +2138,13 @@ class update_forwarding_parameters : public pfcp::pfcp_ies_container {
      }
      return false;
    }
@@ -462,7 +462,7 @@ index 0498ffdae04e7057145b796dccc0736faaed7525..03b872755fd4610d84ea802f363dfad7
  };
  
  //------------------------------------------------------------------------------
-@@ -2145,6 +2177,7 @@ class forwarding_parameters : public pfcp::pfcp_ies_container {
+@@ -2128,6 +2160,7 @@ class forwarding_parameters : public pfcp::pfcp_ies_container {
    std::pair<bool, pfcp::header_enrichment_t> header_enrichment;
    std::pair<bool, pfcp::traffic_endpoint_id_t> linked_traffic_endpoint_id;
    std::pair<bool, pfcp::proxying_t> proxying;
@@ -470,7 +470,7 @@ index 0498ffdae04e7057145b796dccc0736faaed7525..03b872755fd4610d84ea802f363dfad7
  
    forwarding_parameters()
        : destination_interface(),
-@@ -2155,7 +2188,8 @@ class forwarding_parameters : public pfcp::pfcp_ies_container {
+@@ -2138,7 +2171,8 @@ class forwarding_parameters : public pfcp::pfcp_ies_container {
          forwarding_policy(),
          header_enrichment(),
          linked_traffic_endpoint_id(),
@@ -480,7 +480,7 @@ index 0498ffdae04e7057145b796dccc0736faaed7525..03b872755fd4610d84ea802f363dfad7
  
    forwarding_parameters(const forwarding_parameters& f)
        : destination_interface(f.destination_interface),
-@@ -2166,17 +2200,21 @@ class forwarding_parameters : public pfcp::pfcp_ies_container {
+@@ -2149,17 +2183,21 @@ class forwarding_parameters : public pfcp::pfcp_ies_container {
          forwarding_policy(f.forwarding_policy),
          header_enrichment(f.header_enrichment),
          linked_traffic_endpoint_id(f.linked_traffic_endpoint_id),
@@ -503,7 +503,7 @@ index 0498ffdae04e7057145b796dccc0736faaed7525..03b872755fd4610d84ea802f363dfad7
      return true;
    }
  
-@@ -2217,6 +2255,10 @@ class forwarding_parameters : public pfcp::pfcp_ies_container {
+@@ -2200,6 +2238,10 @@ class forwarding_parameters : public pfcp::pfcp_ies_container {
      proxying.first  = true;
      proxying.second = v;
    }
@@ -514,7 +514,7 @@ index 0498ffdae04e7057145b796dccc0736faaed7525..03b872755fd4610d84ea802f363dfad7
  
    bool get(pfcp::destination_interface_t& v) const {
      if (destination_interface.first) {
-@@ -2281,6 +2323,13 @@ class forwarding_parameters : public pfcp::pfcp_ies_container {
+@@ -2264,6 +2306,13 @@ class forwarding_parameters : public pfcp::pfcp_ies_container {
      }
      return false;
    }
@@ -528,7 +528,7 @@ index 0498ffdae04e7057145b796dccc0736faaed7525..03b872755fd4610d84ea802f363dfad7
  };
  
  //------------------------------------------------------------------------------
-@@ -3036,6 +3085,8 @@ class create_qer : public pfcp::pfcp_ies_container {
+@@ -3019,6 +3068,8 @@ class create_qer : public pfcp::pfcp_ies_container {
    std::pair<bool, pfcp::dl_flow_level_marking_t> dl_flow_level_marking;
    std::pair<bool, pfcp::qfi_t> qos_flow_identifier;
    std::pair<bool, pfcp::rqi_t> reflective_qos;
@@ -537,7 +537,7 @@ index 0498ffdae04e7057145b796dccc0736faaed7525..03b872755fd4610d84ea802f363dfad7
  
    create_qer()
        : qer_id(),
-@@ -3046,7 +3097,9 @@ class create_qer : public pfcp::pfcp_ies_container {
+@@ -3029,7 +3080,9 @@ class create_qer : public pfcp::pfcp_ies_container {
          packet_rate(),
          dl_flow_level_marking(),
          qos_flow_identifier(),
@@ -548,7 +548,7 @@ index 0498ffdae04e7057145b796dccc0736faaed7525..03b872755fd4610d84ea802f363dfad7
  
    create_qer(const create_qer& c)
        : qer_id(c.qer_id),
-@@ -3057,7 +3110,9 @@ class create_qer : public pfcp::pfcp_ies_container {
+@@ -3040,7 +3093,9 @@ class create_qer : public pfcp::pfcp_ies_container {
          packet_rate(c.packet_rate),
          dl_flow_level_marking(c.dl_flow_level_marking),
          qos_flow_identifier(c.qos_flow_identifier),
@@ -559,7 +559,7 @@ index 0498ffdae04e7057145b796dccc0736faaed7525..03b872755fd4610d84ea802f363dfad7
  
    // virtual ~create_qer() {};
    void set(const pfcp::qer_id_t& v) {
-@@ -3096,6 +3151,14 @@ class create_qer : public pfcp::pfcp_ies_container {
+@@ -3079,6 +3134,14 @@ class create_qer : public pfcp::pfcp_ies_container {
      reflective_qos.first  = true;
      reflective_qos.second = v;
    }
@@ -574,7 +574,7 @@ index 0498ffdae04e7057145b796dccc0736faaed7525..03b872755fd4610d84ea802f363dfad7
  
    bool get(pfcp::qer_id_t& v) const {
      if (qer_id.first) {
-@@ -3160,6 +3223,20 @@ class create_qer : public pfcp::pfcp_ies_container {
+@@ -3143,6 +3206,20 @@ class create_qer : public pfcp::pfcp_ies_container {
      }
      return false;
    }
@@ -595,7 +595,7 @@ index 0498ffdae04e7057145b796dccc0736faaed7525..03b872755fd4610d84ea802f363dfad7
  };
  
  //------------------------------------------------------------------------------
-@@ -3614,6 +3691,25 @@ class update_pdr : public pfcp::pfcp_ies_container {
+@@ -3597,6 +3674,25 @@ class update_pdr : public pfcp::pfcp_ies_container {
      }
      return false;
    }
@@ -621,7 +621,7 @@ index 0498ffdae04e7057145b796dccc0736faaed7525..03b872755fd4610d84ea802f363dfad7
  };
  
  //------------------------------------------------------------------------------
-@@ -4059,6 +4155,8 @@ class update_qer : public pfcp::pfcp_ies_container {
+@@ -4042,6 +4138,8 @@ class update_qer : public pfcp::pfcp_ies_container {
    std::pair<bool, pfcp::dl_flow_level_marking_t> dl_flow_level_marking;
    std::pair<bool, pfcp::qfi_t> qos_flow_identifier;
    std::pair<bool, pfcp::rqi_t> reflective_qos;
@@ -630,7 +630,7 @@ index 0498ffdae04e7057145b796dccc0736faaed7525..03b872755fd4610d84ea802f363dfad7
  
    update_qer()
        : qer_id(),
-@@ -4069,18 +4167,22 @@ class update_qer : public pfcp::pfcp_ies_container {
+@@ -4052,18 +4150,22 @@ class update_qer : public pfcp::pfcp_ies_container {
          packet_rate(),
          dl_flow_level_marking(),
          qos_flow_identifier(),
@@ -663,7 +663,7 @@ index 0498ffdae04e7057145b796dccc0736faaed7525..03b872755fd4610d84ea802f363dfad7
    }
  
    // virtual ~update_qer() {};
-@@ -4120,6 +4222,14 @@ class update_qer : public pfcp::pfcp_ies_container {
+@@ -4103,6 +4205,14 @@ class update_qer : public pfcp::pfcp_ies_container {
      reflective_qos.first  = true;
      reflective_qos.second = v;
    }
@@ -678,7 +678,7 @@ index 0498ffdae04e7057145b796dccc0736faaed7525..03b872755fd4610d84ea802f363dfad7
  
    bool get(pfcp::qer_id_t& v) const {
      if (qer_id.first) {
-@@ -4184,6 +4294,20 @@ class update_qer : public pfcp::pfcp_ies_container {
+@@ -4167,6 +4277,20 @@ class update_qer : public pfcp::pfcp_ies_container {
      }
      return false;
    }

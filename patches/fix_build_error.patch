@@ -1,6 +1,95 @@
+diff -urN oai-cn5g-upf.orig/src/oai_upf/CMakeLists.txt oai-cn5g-upf/src/oai_upf/CMakeLists.txt
+--- oai-cn5g-upf.orig/src/oai_upf/CMakeLists.txt	2026-05-10 11:19:02.018302729 +0900
++++ oai-cn5g-upf/src/oai_upf/CMakeLists.txt	2026-05-10 11:20:59.003505923 +0900
+@@ -346,8 +346,8 @@
+ include(${SRC_TOP_DIR}/${MOUNTED_COMMON}/config/config.cmake)
+ include(${SRC_TOP_DIR}/${MOUNTED_COMMON}/http/http.cmake)
+ include(${SRC_TOP_DIR}/${MOUNTED_COMMON}/logger/logger.cmake)
+-include(${SRC_TOP_DIR}/${MOUNTED_COMMON}/model/nrf/nrf_model.cmake)
+-include(${SRC_TOP_DIR}/${MOUNTED_COMMON}/model/common_model/common_model.cmake)
++include(${SRC_TOP_DIR}/${MOUNTED_COMMON}/model/nrf_model.cmake)
++include(${SRC_TOP_DIR}/${MOUNTED_COMMON}/model/common_model.cmake)
+ include(${SRC_TOP_DIR}/${MOUNTED_COMMON}/utils/utils.cmake)
+ 
+ 
+diff -urN oai-cn5g-upf.orig/src/upf_app/app/CMakeLists.txt oai-cn5g-upf/src/upf_app/app/CMakeLists.txt
+--- oai-cn5g-upf.orig/src/upf_app/app/CMakeLists.txt	2026-05-10 11:19:02.020302731 +0900
++++ oai-cn5g-upf/src/upf_app/app/CMakeLists.txt	2026-05-10 11:20:59.003505923 +0900
+@@ -43,7 +43,7 @@
+ include_directories(${SRC_TOP_DIR}/${MOUNTED_COMMON}/utils)
+ 
+ include(${SRC_TOP_DIR}/${MOUNTED_COMMON}/utils/utils.cmake)
+-include(${SRC_TOP_DIR}/${MOUNTED_COMMON}/model/nrf/nrf_model.cmake)
++include(${SRC_TOP_DIR}/${MOUNTED_COMMON}/model/nrf_model.cmake)
+ include(${SRC_TOP_DIR}/${MOUNTED_COMMON}/http/http.cmake)
+ include_directories(${SRC_TOP_DIR}/${MOUNTED_COMMON}/model/common_model.cmake)
+ 
+diff -urN oai-cn5g-upf.orig/src/upf_app/app/upf_config.hpp oai-cn5g-upf/src/upf_app/app/upf_config.hpp
+--- oai-cn5g-upf.orig/src/upf_app/app/upf_config.hpp	2026-05-10 11:19:02.021302732 +0900
++++ oai-cn5g-upf/src/upf_app/app/upf_config.hpp	2026-05-10 12:10:52.909162828 +0900
+@@ -52,9 +52,9 @@
+ constexpr auto UPF_CONFIG_OPTION_YES_STR = "Yes";
+ constexpr auto UPF_CONFIG_OPTION_NO_STR  = "No";
+ 
+-const oai::model::common::Snssai DEFAULT_SNSSAI{1};
+-const std::vector<oai::model::nrf::DnnUpfInfoItem> DEFAULT_DNN_LIST = {
+-    oai::model::nrf::DnnUpfInfoItem("default")};
++const oai::_3gpp::model::Snssai DEFAULT_SNSSAI{1};
++const std::vector<oai::_3gpp::model::DnnUpfInfoItem> DEFAULT_DNN_LIST = {
++    oai::_3gpp::model::DnnUpfInfoItem("default")};
+ using namespace libconfig;
+ using namespace oai::common::sbi;
+ 
+diff -urN oai-cn5g-upf.orig/src/upf_app/app/upf_config_yaml.cpp oai-cn5g-upf/src/upf_app/app/upf_config_yaml.cpp
+--- oai-cn5g-upf.orig/src/upf_app/app/upf_config_yaml.cpp	2026-05-10 11:19:02.021302732 +0900
++++ oai-cn5g-upf/src/upf_app/app/upf_config_yaml.cpp	2026-05-10 12:30:30.209158845 +0900
+@@ -261,11 +261,11 @@
+           false, false, false, false, false, false, false, false),
+       m_upf_datapath_configuration(),
+       m_interfaces(interfaces) {
+-  model::nrf::SnssaiUpfInfoItem item;
++  oai::_3gpp::model::SnssaiUpfInfoItem item;
+   item.setSNssai(DEFAULT_SNSSAI);
+   item.setDnnUpfInfoList(DEFAULT_DNN_LIST);
+   m_upf_info.setSNssaiUpfInfoList(
+-      std::vector<oai::model::nrf::SnssaiUpfInfoItem>{item});
++      std::vector<oai::_3gpp::model::SnssaiUpfInfoItem>{item});
+ }
+ 
+ //------------------------------------------------------------------------------
+@@ -361,7 +361,7 @@
+ }
+ 
+ //------------------------------------------------------------------------------
+-const oai::model::nrf::UpfInfo& upf::get_upf_info() const {
++const oai::_3gpp::model::UpfInfo& upf::get_upf_info() const {
+   return m_upf_info;
+ }
+ const std::map<std::string, upf_interface_config>& upf::get_interfaces() const {
+diff -urN oai-cn5g-upf.orig/src/upf_app/app/upf_config_yaml.hpp oai-cn5g-upf/src/upf_app/app/upf_config_yaml.hpp
+--- oai-cn5g-upf.orig/src/upf_app/app/upf_config_yaml.hpp	2026-05-10 11:19:02.022302733 +0900
++++ oai-cn5g-upf/src/upf_app/app/upf_config_yaml.hpp	2026-05-10 12:12:14.234799257 +0900
+@@ -1454,7 +1454,7 @@
+    * @note This structure is serialized to JSON for NRF registration
+    * @see 3GPP TS 29.510 Section 6.1.6.2.9 (UPF NF Profile)
+    */
+-  oai::model::nrf::UpfInfo m_upf_info;
++  oai::_3gpp::model::UpfInfo m_upf_info;
+ 
+   /**
+    * @brief Remote N6 gateway address
+@@ -1621,7 +1621,7 @@
+    * @brief Get UPF Info for NRF registration
+    * @return Reference to UPF Info structure
+    */
+-  [[nodiscard]] const oai::model::nrf::UpfInfo& get_upf_info() const;
++  [[nodiscard]] const oai::_3gpp::model::UpfInfo& get_upf_info() const;
+ 
+   /**
+    * @brief Get datapath configuration
 diff -urN oai-cn5g-upf.orig/src/upf_app/CMakeLists.txt oai-cn5g-upf/src/upf_app/CMakeLists.txt
---- oai-cn5g-upf.orig/src/upf_app/CMakeLists.txt	2026-03-28 18:51:26.210520599 +0900
-+++ oai-cn5g-upf/src/upf_app/CMakeLists.txt	2026-03-28 19:04:55.310854629 +0900
+--- oai-cn5g-upf.orig/src/upf_app/CMakeLists.txt	2026-05-10 11:19:02.019302730 +0900
++++ oai-cn5g-upf/src/upf_app/CMakeLists.txt	2026-05-10 11:20:59.003505923 +0900
 @@ -1,5 +1,7 @@
  include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/toolchain.cmake)
  
@@ -9,9 +98,19 @@ diff -urN oai-cn5g-upf.orig/src/upf_app/CMakeLists.txt oai-cn5g-upf/src/upf_app/
  add_subdirectory(kernel)
  include_directories(${SRC_TOP_DIR}/upf_app/kernel/bpf_pfcp)
  include_directories(${SRC_TOP_DIR}/upf_app/simpleswitch)
+@@ -18,8 +20,7 @@
+ include_directories(${SRC_TOP_DIR}/${MOUNTED_COMMON}/utils)
+ include_directories(${SRC_TOP_DIR}/${MOUNTED_COMMON}/utils/bstr)
+ include_directories(${SRC_TOP_DIR}/${MOUNTED_COMMON}/model/common_model)
+-include(${SRC_TOP_DIR}/${MOUNTED_COMMON}/model/nrf/nrf_model.cmake)
+-include(${SRC_TOP_DIR}/${MOUNTED_COMMON}/model/nrf/nrf_model.cmake)
++include(${SRC_TOP_DIR}/${MOUNTED_COMMON}/model/nrf_model.cmake)
+ include(${SRC_TOP_DIR}/${MOUNTED_COMMON}/utils/utils.cmake)
+ include_directories(${SRC_TOP_DIR}/${MOUNTED_COMMON}/model/common_model.cmake)
+ include_directories(${SRC_TOP_DIR}/upf_app/kernel)
 diff -urN oai-cn5g-upf.orig/src/upf_app/control/SessionManager.h oai-cn5g-upf/src/upf_app/control/SessionManager.h
---- oai-cn5g-upf.orig/src/upf_app/control/SessionManager.h	2026-03-28 18:51:26.218520675 +0900
-+++ oai-cn5g-upf/src/upf_app/control/SessionManager.h	2026-03-28 19:04:05.365462466 +0900
+--- oai-cn5g-upf.orig/src/upf_app/control/SessionManager.h	2026-05-10 11:19:02.027302738 +0900
++++ oai-cn5g-upf/src/upf_app/control/SessionManager.h	2026-05-10 11:20:38.971460241 +0900
 @@ -42,6 +42,7 @@
  #ifndef SESSION_MANAGER_H_
  #define SESSION_MANAGER_H_
@@ -20,3 +119,15 @@ diff -urN oai-cn5g-upf.orig/src/upf_app/control/SessionManager.h oai-cn5g-upf/sr
  #include <cstdint>
  #include <memory>
  #include <mutex>
+diff -urN oai-cn5g-upf.orig/src/upf_app/simpleswitch/CMakeLists.txt oai-cn5g-upf/src/upf_app/simpleswitch/CMakeLists.txt
+--- oai-cn5g-upf.orig/src/upf_app/simpleswitch/CMakeLists.txt	2026-05-10 11:19:02.043302753 +0900
++++ oai-cn5g-upf/src/upf_app/simpleswitch/CMakeLists.txt	2026-05-10 11:20:59.003505923 +0900
+@@ -42,7 +42,7 @@
+ include_directories(${SRC_TOP_DIR}/${MOUNTED_COMMON}/utils/bstr)
+ include_directories(${SRC_TOP_DIR}/${MOUNTED_COMMON}/model/common_model)
+ include_directories(${SRC_TOP_DIR}/upf_app/framed_routing)
+-include(${SRC_TOP_DIR}/${MOUNTED_COMMON}/model/nrf/nrf_model.cmake)
++include(${SRC_TOP_DIR}/${MOUNTED_COMMON}/model/nrf_model.cmake)
+ 
+ add_library (SIMPLE_SWITCH STATIC
+   pfcp_far.cpp
