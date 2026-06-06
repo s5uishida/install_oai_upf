@@ -227,7 +227,7 @@ First, check installed software necessary to build and run UPF. Then, build and 
 # echo "/usr/lib64" >> /etc/ld.so.conf.d/libbpf.conf
 # ldconfig
 ```
-When modify the source codes and rebuild, do the following.
+If you modify the source codes and rebuild after running the build script once, do the following.
 ```
 # cd ~/oai-cn5g-upf/build/upf/build
 # make
