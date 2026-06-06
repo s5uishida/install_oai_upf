@@ -231,6 +231,11 @@ When modify the source codes and rebuild, do the following:
 ```
 # cd ~/oai-cn5g-upf/build/upf/build
 # make
+[  1%] Built target UDP
+...
+[100%] Built target upf
+# ls upf ./upf_app/kernel/CMakeFiles/qer_tc.dir/tc/qer_tc_kern.c.o
+upf  ./upf_app/kernel/CMakeFiles/qer_tc.dir/tc/qer_tc_kern.c.o
 ```
 
 <a id="setup_up"></a>
