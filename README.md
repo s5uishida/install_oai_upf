@@ -170,7 +170,7 @@ Finally, get the patches to fix some building and runtime errors.
 
 ### Clone OAI-CN5G-UPF
 
-Download and change to tag `develop`.
+Download and change to [this commit hash](https://gitlab.eurecom.fr/oai/cn5g/oai-cn5g-upf/-/commit/cfc346c7dd11fd422e90e094ed75d8eb123f90ed).
 ```
 # cd ~
 # git clone https://gitlab.eurecom.fr/oai/cn5g/oai-cn5g-upf.git
