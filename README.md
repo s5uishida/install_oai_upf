@@ -106,9 +106,9 @@ I simply confirmed the operation of the following versions.
 
 | Version | Commit | Date |
 | --- | --- | --- |
-| 2.2.1+ | cfc346c7dd11fd422e90e094ed75d8eb123f90ed | 2026.06.05 |
-| 2.2.0+ | 486acc3b38acc4e17449b29a52fc7581a4af7653 | 2026.03.26 |
-| 2.2.0 | e025cdfb3a9c18a228f2efe36bd06b9de998554c | 2025.12.13 |
+| 2.2.1+ | `cfc346c7dd11fd422e90e094ed75d8eb123f90ed` | 2026.06.05 |
+| 2.2.0+ | `486acc3b38acc4e17449b29a52fc7581a4af7653` | 2026.03.26 |
+| 2.2.0 | `e025cdfb3a9c18a228f2efe36bd06b9de998554c` | 2025.12.13 |
 
 <a id="install_pkg"></a>
 
