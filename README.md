@@ -60,7 +60,7 @@ The built simulation environment is as follows.
 <img src="./images/network-overview.png" title="./images/network-overview.png" width=800px></img>
 
 The eBPF/XDP UPF used is as follows.
-- eBPF/XDP UPF - OAI-CN5G-UPF v2.2.0 (2026.06.05) - https://gitlab.eurecom.fr/oai/cn5g/oai-cn5g-upf
+- eBPF/XDP UPF - OAI-CN5G-UPF v2.2.1 (2026.06.05) - https://gitlab.eurecom.fr/oai/cn5g/oai-cn5g-upf
 
 Each VMs are as follows.  
 | VM | SW & Role | IP address | OS | CPU<br>(Min) | Mem<br>(Min) | HDD<br>(Min) |
@@ -106,7 +106,7 @@ I simply confirmed the operation of the following versions.
 
 | Version | Commit | Date |
 | --- | --- | --- |
-| 2.2.0+ | cfc346c7dd11fd422e90e094ed75d8eb123f90ed | 2026.06.05 |
+| 2.2.1+ | cfc346c7dd11fd422e90e094ed75d8eb123f90ed | 2026.06.05 |
 | 2.2.0+ | 486acc3b38acc4e17449b29a52fc7581a4af7653 | 2026.03.26 |
 | 2.2.0 | e025cdfb3a9c18a228f2efe36bd06b9de998554c | 2025.12.13 |
 
