@@ -1,15 +1,7 @@
-diff --git a/build/common-build b/build/common-build
-index bd36b5c7ee802984c6948e61b8815afbbc63d42e..6b71d9c09dff39b82be79a64b608fba92c294d6e 160000
---- a/build/common-build
-+++ b/build/common-build
-@@ -1 +1 @@
--Subproject commit bd36b5c7ee802984c6948e61b8815afbbc63d42e
-+Subproject commit 6b71d9c09dff39b82be79a64b608fba92c294d6e
-diff --git a/build/scripts/build_helper.upf b/build/scripts/build_helper.upf
-index 119e43d90521b4e2a5ef839ba6c2fc0f5a0d749a..5403fee70bcf4acaeca4dc3de97dd80b04c9cc5f 100644
---- a/build/scripts/build_helper.upf
-+++ b/build/scripts/build_helper.upf
-@@ -300,6 +300,9 @@ check_install_upf_deps() {
+diff -urN oai-cn5g-upf.orig/build/scripts/build_helper.upf oai-cn5g-upf/build/scripts/build_helper.upf
+--- oai-cn5g-upf.orig/build/scripts/build_helper.upf	2026-05-31 13:20:37.000000000 +0900
++++ oai-cn5g-upf/build/scripts/build_helper.upf	2026-05-31 14:13:08.573036204 +0900
+@@ -275,6 +275,9 @@
        "ubuntu20.04")
          specific_packages="libconfig++-dev libasio-dev libboost-all-dev libasan5"
          ;;
@@ -19,7 +11,7 @@ index 119e43d90521b4e2a5ef839ba6c2fc0f5a0d749a..5403fee70bcf4acaeca4dc3de97dd80b
        *)
          specific_packages="libconfig++-dev libasio-dev libboost-all-dev libasan?"
          ;;
-@@ -418,6 +421,12 @@ check_install_upf_deps() {
+@@ -393,6 +396,12 @@
          install_libyaml_cpp_from_git $1 $2
          ret=$?;[[ $ret -ne 0 ]] && return $ret
          ;;
@@ -32,7 +24,7 @@ index 119e43d90521b4e2a5ef839ba6c2fc0f5a0d749a..5403fee70bcf4acaeca4dc3de97dd80b
      esac
    elif [[ "$OS_BASEDISTRO" == "fedora" ]]; then
      # definitely, 0.6.2 as PPA installed is not enough
-@@ -523,8 +532,9 @@ get_distribution_release() {
+@@ -498,7 +507,7 @@
  
  check_platform_for_lttng() {
    local distribution=$(get_distribution_release)
@@ -41,15 +33,10 @@ index 119e43d90521b4e2a5ef839ba6c2fc0f5a0d749a..5403fee70bcf4acaeca4dc3de97dd80b
        return 1
    fi
    return 0
--}
-\ No newline at end of file
-+}
-+
-diff --git a/docker/Dockerfile.upf.ubuntu b/docker/Dockerfile.upf.ubuntu
-index 82112eb26865430d6a589ca193283028b976bec9..88254482578e13028ce21a56061788d615b7ab9c 100644
---- a/docker/Dockerfile.upf.ubuntu
-+++ b/docker/Dockerfile.upf.ubuntu
-@@ -29,7 +29,7 @@
+diff -urN oai-cn5g-upf.orig/docker/Dockerfile.upf.ubuntu oai-cn5g-upf/docker/Dockerfile.upf.ubuntu
+--- oai-cn5g-upf.orig/docker/Dockerfile.upf.ubuntu	2026-05-31 13:20:37.000000000 +0900
++++ oai-cn5g-upf/docker/Dockerfile.upf.ubuntu	2026-05-31 14:11:41.563388082 +0900
+@@ -13,7 +13,7 @@
  #---------------------------------------------------------------------
  # BASE IMAGE
  #---------------------------------------------------------------------
@@ -58,7 +45,7 @@ index 82112eb26865430d6a589ca193283028b976bec9..88254482578e13028ce21a56061788d6
  FROM $BASE_IMAGE AS oai-upf-base
  
  ENV DEBIAN_FRONTEND=noninteractive
-@@ -66,6 +66,23 @@ RUN ./build_upf --install-deps --force
+@@ -50,6 +50,23 @@
  FROM oai-upf-base AS oai-upf-builder
  # Copy the rest of source code
  COPY . /openair-upf
@@ -82,7 +69,7 @@ index 82112eb26865430d6a589ca193283028b976bec9..88254482578e13028ce21a56061788d6
  # Building UPF
  WORKDIR /openair-upf/build/scripts
  ARG BUILD_ARGS=""
-@@ -111,12 +128,14 @@ RUN apt-get update && \
+@@ -95,12 +112,14 @@
        netbase \
  # Ubuntu 20 --> libasan5
  # Ubuntu 22 --> libasan6
@@ -98,7 +85,7 @@ index 82112eb26865430d6a589ca193283028b976bec9..88254482578e13028ce21a56061788d6
        libdouble-conversion3 \
        libconfig++9v5 \
        librtmp1 \
-@@ -125,7 +144,8 @@ RUN apt-get update && \
+@@ -109,7 +128,8 @@
        libcurl?-gnutls \
  # Ubuntu 20 --> boost71
  # Ubuntu 22 --> boost74
@@ -108,7 +95,7 @@ index 82112eb26865430d6a589ca193283028b976bec9..88254482578e13028ce21a56061788d6
  # lttng
    && if [ "$ENABLE_LTTNG" = "true" ]; then DEBIAN_FRONTEND=noninteractive apt-get install --yes liblttng-ust-dev; fi \
    && rm -rf /var/lib/apt/lists/*
-@@ -144,11 +164,11 @@ WORKDIR /usr/local/lib
+@@ -128,11 +148,11 @@
  COPY --from=oai-upf-builder \
      /usr/local/lib/libfmt.so \
      /usr/local/lib/libyaml-cpp.so.0.? \
@@ -123,10 +110,3 @@ index 82112eb26865430d6a589ca193283028b976bec9..88254482578e13028ce21a56061788d6
      /openair-upf/build/ext/libbpf/src/libbpf.so.1 \
      # /openair-upf/build/upf/build/upf_app/utils/libupfutils.so \
      ./
-@@ -189,4 +209,4 @@ HEALTHCHECK --interval=10s \
- 
- CMD ["/openair-upf/bin/oai_upf", "-c", "/openair-upf/etc/config.yaml", "-o"]
- 
--ENTRYPOINT [ "sh", "/openair-upf/bin/entrypoint.sh" ]
-\ No newline at end of file
-+ENTRYPOINT [ "sh", "/openair-upf/bin/entrypoint.sh" ]
