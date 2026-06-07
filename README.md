@@ -126,7 +126,7 @@ If you want to use `xdpdump` command, install `xdp-tools` package.
 
 ### Get patches
 
-First, get a patch for the following merge requests of OAI-CN5G-UPF to work with Open5GS and free5GC SMF.
+First, get a patch for the following merge requests of OAI-CN5G-COMMON-SRC to work with Open5GS and free5GC SMF.
 
 - [Fix: fix interoperability with 3rd parties SMFs](https://gitlab.eurecom.fr/oai/cn5g/oai-cn5g-common-src/-/merge_requests/148)
   ```
