@@ -1,0 +1,39 @@
+diff --git a/http/http_client.cpp b/http/http_client.cpp
+index 4e321ce5..3623314b 100644
+--- a/http/http_client.cpp
++++ b/http/http_client.cpp
+@@ -283,7 +283,8 @@ void http_client::prepare_session(
+   // Enable SSL/TLS
+   if (m_enable_tls) {
+     cpr::SslOptions sslOpts =
+-        cpr::Ssl(cpr::ssl::ALPN{false}, cpr::ssl::NPN{false});
++        {};  // TODO temporary disable for compiling under U24.04:
++             // cpr::Ssl(cpr::ssl::ALPN{false}, cpr::ssl::NPN{false});
+     sslOpts.SetOption(cpr::ssl::TLSv1_0{});
+     sslOpts.SetOption(cpr::ssl::VerifyHost{false});
+     sslOpts.SetOption(cpr::ssl::VerifyPeer{false});
+diff --git a/ngap/ngap_ies/AmfPointer.hpp b/ngap/ngap_ies/AmfPointer.hpp
+index 7b3e6358..50adff8b 100644
+--- a/ngap/ngap_ies/AmfPointer.hpp
++++ b/ngap/ngap_ies/AmfPointer.hpp
+@@ -6,6 +6,7 @@
+ #define _AMF_POINTER_H_
+ 
+ #include <string>
++#include <cstdint>
+ 
+ constexpr uint8_t kAmfPointerMaxValue = 63;  // 6 bits
+ 
+diff --git a/ngap/ngap_ies/AmfSetId.hpp b/ngap/ngap_ies/AmfSetId.hpp
+index e561f1a3..28029ff0 100644
+--- a/ngap/ngap_ies/AmfSetId.hpp
++++ b/ngap/ngap_ies/AmfSetId.hpp
+@@ -5,6 +5,8 @@
+ #define _AMF_SET_ID_H_
+ 
+ #include <string>
++#include <cstdint>
++
+ constexpr uint16_t kAmfSetIdMaxValue = 1023;
+ 
+ extern "C" {

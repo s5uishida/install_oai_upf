@@ -34,8 +34,8 @@ diff -urN oai-cn5g-upf.orig/build/scripts/build_helper.upf oai-cn5g-upf/build/sc
    fi
    return 0
 diff -urN oai-cn5g-upf.orig/docker/Dockerfile.upf.ubuntu oai-cn5g-upf/docker/Dockerfile.upf.ubuntu
---- oai-cn5g-upf.orig/docker/Dockerfile.upf.ubuntu	2026-05-31 13:20:37.000000000 +0900
-+++ oai-cn5g-upf/docker/Dockerfile.upf.ubuntu	2026-05-31 14:11:41.563388082 +0900
+--- oai-cn5g-upf.orig/docker/Dockerfile.upf.ubuntu	2026-08-11 11:31:56.074826110 +0900
++++ oai-cn5g-upf/docker/Dockerfile.upf.ubuntu	2026-08-11 11:35:29.279719217 +0900
 @@ -13,7 +13,7 @@
  #---------------------------------------------------------------------
  # BASE IMAGE
@@ -70,39 +70,39 @@ diff -urN oai-cn5g-upf.orig/docker/Dockerfile.upf.ubuntu oai-cn5g-upf/docker/Doc
  WORKDIR /openair-upf/build/scripts
  ARG BUILD_ARGS=""
 @@ -95,12 +112,14 @@
-       netbase \
- # Ubuntu 20 --> libasan5
- # Ubuntu 22 --> libasan6
-+# Ubuntu 24 --> libasan8
- #      libasan? \
-       libgssapi-krb5-2 \
- # Ubuntu 20 --> libldap-2.4-2
- # Ubuntu 22 --> libldap-2.5-0
-+# Ubuntu 24 --> libldap-2.6-7
-       libldap-2.?-? \
--      libgoogle-glog0v5 \
-+      libgoogle-glog0v6 \
-       libdouble-conversion3 \
-       libconfig++9v5 \
-       librtmp1 \
+     netbase \
+     # Ubuntu 20 --> libasan5
+     # Ubuntu 22 --> libasan6
++    # Ubuntu 24 --> libasan8
+     #      libasan? \
+     libgssapi-krb5-2 \
+     # Ubuntu 20 --> libldap-2.4-2
+     # Ubuntu 22 --> libldap-2.5-0
++    # Ubuntu 24 --> libldap-2.6-7
+     libldap-2.?-? \
+-    libgoogle-glog0v5 \
++    libgoogle-glog0v6 \
+     libdouble-conversion3 \
+     libconfig++9v5 \
+     librtmp1 \
 @@ -109,7 +128,8 @@
-       libcurl?-gnutls \
- # Ubuntu 20 --> boost71
- # Ubuntu 22 --> boost74
--      libboost-thread1.7?.0 \
-+# Ubuntu 24 --> boost83
-+      libboost-thread1.83.0 \
- # lttng
-   && if [ "$ENABLE_LTTNG" = "true" ]; then DEBIAN_FRONTEND=noninteractive apt-get install --yes liblttng-ust-dev; fi \
-   && rm -rf /var/lib/apt/lists/*
+     libcurl?-gnutls \
+     # Ubuntu 20 --> boost71
+     # Ubuntu 22 --> boost74
+-    libboost-thread1.7?.0 \
++    # Ubuntu 24 --> boost83
++    libboost-thread1.83.0 \
+     # lttng
+     && if [ "$ENABLE_LTTNG" = "true" ]; then DEBIAN_FRONTEND=noninteractive apt-get install --yes liblttng-ust-dev; fi \
+     && rm -rf /var/lib/apt/lists/*
 @@ -128,11 +148,11 @@
  COPY --from=oai-upf-builder \
      /usr/local/lib/libfmt.so \
      /usr/local/lib/libyaml-cpp.so.0.? \
 -    /usr/local/lib/libcpr.so.1 \    
-+    /usr/local/lib/libcpr.so.1* \
- # Ubuntu 20 --> libbfd-2.34
- # Ubuntu 22 --> libbfd-2.38
++    /usr/local/lib/libcpr.so.1* \    
+     # Ubuntu 20 --> libbfd-2.34
+     # Ubuntu 22 --> libbfd-2.38
 -    /usr/lib/?-linux-gnu/libbfd-2.3?-system.so \
 -    /usr/lib/?-linux-gnu/libopcodes-2.3?-system.so \
 +    /usr/lib/?-linux-gnu/libbfd-2.*?-system.so \

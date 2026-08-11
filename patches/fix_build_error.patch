@@ -1,3 +1,14 @@
+diff -urN oai-cn5g-upf.orig/src/common-src/utils/fqdn.hpp oai-cn5g-upf/src/common-src/utils/fqdn.hpp
+--- oai-cn5g-upf.orig/src/common-src/utils/fqdn.hpp	2026-08-11 11:32:10.175738874 +0900
++++ oai-cn5g-upf/src/common-src/utils/fqdn.hpp	2026-08-11 13:48:29.312055725 +0900
+@@ -6,6 +6,7 @@
+ #define FILE_FQDN_HPP_SEEN
+ 
+ #include <string>
++#include <cstdint>
+ 
+ namespace oai::utils {
+ class fqdn {
 diff -urN oai-cn5g-upf.orig/src/common-src/utils/mime_parser.hpp oai-cn5g-upf/src/common-src/utils/mime_parser.hpp
 --- oai-cn5g-upf.orig/src/common-src/utils/mime_parser.hpp	2026-06-06 02:44:43.000000000 +0900
 +++ oai-cn5g-upf/src/common-src/utils/mime_parser.hpp	2026-06-06 05:48:07.735160631 +0900
@@ -44,50 +55,3 @@ diff -urN oai-cn5g-upf.orig/src/oai_upf/CMakeLists.txt oai-cn5g-upf/src/oai_upf/
  )
  
  
-diff -urN oai-cn5g-upf.orig/src/upf_app/CMakeLists.txt oai-cn5g-upf/src/upf_app/CMakeLists.txt
---- oai-cn5g-upf.orig/src/upf_app/CMakeLists.txt	2026-06-06 02:44:30.000000000 +0900
-+++ oai-cn5g-upf/src/upf_app/CMakeLists.txt	2026-06-06 05:48:07.735160631 +0900
-@@ -2,6 +2,8 @@
- 
- include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/toolchain.cmake)
- 
-+add_compile_options("-mcpu=v4")
-+
- add_subdirectory(kernel)
- include_directories(${SRC_TOP_DIR}/upf_app/kernel/bpf_pfcp)
- include_directories(${SRC_TOP_DIR}/upf_app/simpleswitch)
-diff -urN oai-cn5g-upf.orig/src/upf_app/control/SessionManager.h oai-cn5g-upf/src/upf_app/control/SessionManager.h
---- oai-cn5g-upf.orig/src/upf_app/control/SessionManager.h	2026-06-06 02:44:30.000000000 +0900
-+++ oai-cn5g-upf/src/upf_app/control/SessionManager.h	2026-06-06 05:48:07.735160631 +0900
-@@ -25,6 +25,7 @@
- #ifndef SESSION_MANAGER_H_
- #define SESSION_MANAGER_H_
- 
-+#include <string>
- #include <cstdint>
- #include <memory>
- #include <mutex>
-diff -urN oai-cn5g-upf.orig/src/upf_app/simpleswitch/pfcp_session.cpp oai-cn5g-upf/src/upf_app/simpleswitch/pfcp_session.cpp
---- oai-cn5g-upf.orig/src/upf_app/simpleswitch/pfcp_session.cpp	2026-06-06 02:50:01.000000000 +0900
-+++ oai-cn5g-upf/src/upf_app/simpleswitch/pfcp_session.cpp	2026-06-06 04:19:18.280882184 +0900
-@@ -542,7 +542,7 @@
- //------------------------------------------------------------------------------
- bool pfcp_session::update(
-     const pfcp::update_qer& qer_update, uint8_t& cause_value) {
--  uint32_t qer_id = qer_update.qer_id.qer_id;
-+  uint32_t qer_id = qer_update.qer_id.second.qer_id;
- 
-   Logger::upf_n4().info(
-       "pfcp_session::update(qer) seid " SEID_FMT " QER=%u", seid, qer_id);
-diff -urN oai-cn5g-upf.orig/src/upf_app/simpleswitch/pfcp_switch.cpp oai-cn5g-upf/src/upf_app/simpleswitch/pfcp_switch.cpp
---- oai-cn5g-upf.orig/src/upf_app/simpleswitch/pfcp_switch.cpp	2026-06-06 02:44:30.000000000 +0900
-+++ oai-cn5g-upf/src/upf_app/simpleswitch/pfcp_switch.cpp	2026-06-06 04:22:56.195446552 +0900
-@@ -1130,7 +1130,7 @@
-           if (not session->update(qer, cause_value)) {
-             failed_rule_id_t failed_rule = {};
-             failed_rule.rule_id_type     = FAILED_RULE_ID_TYPE_QER;
--            failed_rule.rule_id_value    = qer.qer_id.qer_id;
-+            failed_rule.rule_id_value    = qer.qer_id.second.qer_id;
-             resp->pfcp_ies.set(failed_rule);
-           }
-         }
