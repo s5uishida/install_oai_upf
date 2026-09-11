@@ -239,9 +239,10 @@ upf  ./upf_app/kernel/CMakeFiles/qer_tc.dir/tc/qer_tc_kern.c.o
 
 ## Setup OAI-CN5G-UPF on VM-UP
 
-First, down `ens18` which is the default gateway interface of VM-UP.
+First, down the default gateway interface `ens18` of the VM-UP and set the VM-DN IP address to default GW on the N6 interface`ens22`.
 ```
 # ip link set dev ens18 down
+# ip route add default via 192.168.16.152 dev ens22
 ```
 
 <a id="conf"></a>
@@ -426,11 +427,6 @@ net.ipv4.ip_forward=1
 ```
 ```
 # sysctl -p
-```
-Next, down the interface `ens18` of the VM-UP and set the VM-DN IP address to default GW on the N6 interface`ens22`.
-```
-# ip link set dev ens18 down
-# ip route add default via 192.168.16.152 dev ens22
 ```
 
 <a id="open5gs"></a>
