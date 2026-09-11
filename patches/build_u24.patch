@@ -45,30 +45,6 @@ diff -urN oai-cn5g-upf.orig/docker/Dockerfile.upf.ubuntu oai-cn5g-upf/docker/Doc
  FROM $BASE_IMAGE AS oai-upf-base
  
  ENV DEBIAN_FRONTEND=noninteractive
-@@ -50,6 +50,23 @@
- FROM oai-upf-base AS oai-upf-builder
- # Copy the rest of source code
- COPY . /openair-upf
-+
-+
-+# Remove the deprecated NPN argument to add support for Ubuntu 24.04
-+RUN sed -i \
-+  's/cpr::ssl::ALPN{false}, cpr::ssl::NPN{false}/cpr::ssl::ALPN{false}/g' \
-+  /openair-upf/src/common-src/http/http_client.cpp
-+
-+# Ubuntu 24.04 - <cstdint> is no longer implicitly included by standard headers
-+RUN sed -i '1i #include <cstdint>' \
-+  /openair-upf/src/common-src/utils/fqdn.hpp
-+
-+RUN sed -i '1i #include <cstdint>' \
-+  /openair-upf/src/common-src/utils/output_wrapper.hpp
-+
-+RUN sed -i '1i #include <cstdint>' \
-+  /openair-upf/src/common-src/utils/mime_parser.hpp
-+
- # Building UPF
- WORKDIR /openair-upf/build/scripts
- ARG BUILD_ARGS=""
 @@ -95,12 +112,14 @@
      netbase \
      # Ubuntu 20 --> libasan5
