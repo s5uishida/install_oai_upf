@@ -1,0 +1,75 @@
+diff -ur oai-cn5g-upf.orig/src/pfcp/pfcp.cpp oai-cn5g-upf/src/pfcp/pfcp.cpp
+--- oai-cn5g-upf.orig/src/pfcp/pfcp.cpp	2026-09-12 11:33:55.054545354 +0900
++++ oai-cn5g-upf/src/pfcp/pfcp.cpp	2026-09-12 20:28:20.714813837 +0900
+@@ -261,7 +261,7 @@
+   trxn_id2seq_num.insert(
+       std::pair<uint64_t, uint32_t>(proc.trxn_id, msg.get_sequence_number()));
+ 
+-  udp_s_allocated.async_send_to(
++  udp_s_8805.async_send_to(
+       reinterpret_cast<const char*>(bstream.c_str()), bstream.length(), dest);
+   return msg.get_sequence_number();
+ }
+@@ -294,7 +294,7 @@
+   trxn_id2seq_num.insert(
+       std::pair<uint64_t, uint32_t>(proc.trxn_id, msg.get_sequence_number()));
+ 
+-  udp_s_allocated.async_send_to(
++  udp_s_8805.async_send_to(
+       reinterpret_cast<const char*>(bstream.c_str()), bstream.length(), dest);
+   return msg.get_sequence_number();
+ }
+@@ -327,7 +327,7 @@
+   trxn_id2seq_num.insert(
+       std::pair<uint64_t, uint32_t>(proc.trxn_id, msg.get_sequence_number()));
+ 
+-  udp_s_allocated.async_send_to(
++  udp_s_8805.async_send_to(
+       reinterpret_cast<const char*>(bstream.c_str()), bstream.length(), dest);
+   return msg.get_sequence_number();
+ }
+@@ -423,7 +423,7 @@
+   trxn_id2seq_num.insert(
+       std::pair<uint64_t, uint32_t>(proc.trxn_id, msg.get_sequence_number()));
+ 
+-  udp_s_allocated.async_send_to(
++  udp_s_8805.async_send_to(
+       reinterpret_cast<const char*>(bstream.c_str()), bstream.length(), dest);
+   return msg.get_sequence_number();
+ }
+@@ -459,7 +459,7 @@
+   trxn_id2seq_num.insert(
+       std::pair<uint64_t, uint32_t>(proc.trxn_id, msg.get_sequence_number()));
+ 
+-  udp_s_allocated.async_send_to(
++  udp_s_8805.async_send_to(
+       reinterpret_cast<const char*>(bstream.c_str()), bstream.length(), dest);
+   return msg.get_sequence_number();
+ }
+@@ -495,7 +495,7 @@
+   trxn_id2seq_num.insert(
+       std::pair<uint64_t, uint32_t>(proc.trxn_id, msg.get_sequence_number()));
+ 
+-  udp_s_allocated.async_send_to(
++  udp_s_8805.async_send_to(
+       reinterpret_cast<const char*>(bstream.c_str()), bstream.length(), dest);
+   return msg.get_sequence_number();
+ }
+@@ -562,7 +562,7 @@
+   trxn_id2seq_num.insert(
+       std::pair<uint64_t, uint32_t>(proc.trxn_id, msg.get_sequence_number()));
+ 
+-  udp_s_allocated.async_send_to(
++  udp_s_8805.async_send_to(
+       reinterpret_cast<const char*>(bstream.c_str()), bstream.length(), dest);
+   return msg.get_sequence_number();
+ }
+@@ -598,7 +598,7 @@
+   trxn_id2seq_num.insert(
+       std::pair<uint64_t, uint32_t>(proc.trxn_id, msg.get_sequence_number()));
+ 
+-  udp_s_allocated.async_send_to(
++  udp_s_8805.async_send_to(
+       reinterpret_cast<const char*>(bstream.c_str()), bstream.length(), dest);
+   return msg.get_sequence_number();
+ }
