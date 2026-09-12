@@ -855,7 +855,7 @@ I would like to thank the excellent developers and all the contributors of OAI-C
 
 - [2026.09.12] Updated as follows.
   - Updated OAI-CN5G-UPF and OAI-CN5G-COMMON-SRC.
-  - [Fixing issues when building with U24.04](https://github.com/openairinterface/oai-cn5g-common-src/commit/79f2d37025df06b6a974c5301aa6affc81014a61) patch has been merged into the [u24-support-develop](https://github.com/openairinterface/oai-cn5g-common-src/tree/u24-support-develop) branch of OAI-CN5G-COMMON-SRC, so updated to use this branch.
+  - Updated to use [u24-support-develop](https://github.com/openairinterface/oai-cn5g-common-src/tree/u24-support-develop) branch of OAI-CN5G-COMMON-SRC, as a patch almost identical to [Fixing issues when building with U24.04](https://github.com/openairinterface/oai-cn5g-common-src/commit/79f2d37025df06b6a974c5301aa6affc81014a61) has been merged into it.
 - [2026.08.22] Updated OAI-CN5G-UPF and OAI-CN5G-COMMON-SRC.
 - [2026.08.15] Updated as follows.
   - Changed to use OAI-CN5G-UPF [upf_common_src](https://github.com/openairinterface/oai-cn5g-upf/tree/upf_common_src) branch.
