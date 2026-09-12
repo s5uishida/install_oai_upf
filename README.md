@@ -439,7 +439,7 @@ net.ipv4.ip_forward=1
 When working with Open5GS SMF, add the following settings to `smf.yaml`.
 
 `smf.yaml`
-```
+```yaml
 global:
   parameter:
     use_upg_vpp: true
