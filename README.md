@@ -166,7 +166,7 @@ Then, get a patch that assumes that `qer_tc_kern.c.o` is in the same directory a
   # wget https://raw.githubusercontent.com/s5uishida/install_oai_upf/refs/heads/main/patches/install_qer_tc_kern_c_o.patch
   ```
 
-Finally, get the patches to bind the PFCP request source port to the same port used for receiving responses.
+Finally, get the patch to use the PFCP request source port to the same local port used for receiving PFCP requests from the SMF.
 
 - [Fix same UDP port for both PFCP request and response](https://github.com/s5uishida/install_oai_upf/blob/main/patches/fix_same_port_for_pfcp_req_res.patch)
   ```
