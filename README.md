@@ -109,6 +109,7 @@ I simply confirmed the operation of the following versions.
 
 | Version | Commit | Date |
 | --- | --- | --- |
+| 2.2.1+ | `4a8d40580b78047f6a2bde8508f7d35354834602` | 2026.09.09 |
 | 2.2.1+ | `4b9190a4e1bf9d6d8fa2d8d9c593ce22f6f0b264` | 2026.09.09 |
 | 2.2.1+ | `97e4c4cf0d52c1065b9a5814cb84832635684931` | 2026.08.19 |
 | 2.2.1+ | `4be56e96acbcc80e5c222bf5fdac04fddb016f0d` | 2026.08.13 |
@@ -123,8 +124,8 @@ I simply confirmed the operation of the following versions.
 
 | Repository / Branch | Commit & Date | Title |
 | --- | --- | --- |
-| oai-cn5g-upf /<br>develop | `4b9190a4e1bf9d6d8fa2d8d9c593ce22f6f0b264`<br>2026.09.09 | [Merge pull request #17 from openairinterface/license_correction](https://github.com/openairinterface/oai-cn5g-upf/commit/4b9190a4e1bf9d6d8fa2d8d9c593ce22f6f0b264) |
-| common-build /<br>ubuntu_24_support_test | `49d14614762b8ee8e8184b11102251cc451f0c3d`<br>2026.06.05 | [Update Folly Installation for U24](https://github.com/openairinterface/oai-cn5g-common-build/commit/49d14614762b8ee8e8184b11102251cc451f0c3d) |
+| oai-cn5g-upf /<br>simple-switch-perf | `4a8d40580b78047f6a2bde8508f7d35354834602`<br>2026.09.09 | [simple switch: fix the GTP-U header walk](https://github.com/openairinterface/oai-cn5g-upf/commit/4a8d40580b78047f6a2bde8508f7d35354834602) |
+| common-build /<br>ubuntu-24-support-only | `d3e71d94b3b8dc80f9d651ca0e0b2ec03f153100`<br>2026.09.10 | [build: support CentOS Stream 10 only, drop RHEL 9 and Rocky 9](https://github.com/openairinterface/oai-cn5g-common-build/commit/d3e71d94b3b8dc80f9d651ca0e0b2ec03f153100) |
 | common-src /<br>u24-support-develop | `c0dcc9aa70da170b3dcd690a34e704be4199f3fd`<br>2026.09.10 | [Apply clang-format:19.1.1 to the source files](https://github.com/openairinterface/oai-cn5g-common-src/commit/c0dcc9aa70da170b3dcd690a34e704be4199f3fd) |
 
 <a id="install_pkg"></a>
@@ -165,11 +166,11 @@ Then, get a patch that assumes that `qer_tc_kern.c.o` is in the same directory a
   # wget https://raw.githubusercontent.com/s5uishida/install_oai_upf/refs/heads/main/patches/install_qer_tc_kern_c_o.patch
   ```
 
-Finally, get the patches to fix some building errors.
+Finally, get the patches to bind the PFCP request source port to the same port used for receiving responses.
 
-- [Fix some build errors](https://github.com/s5uishida/install_oai_upf/blob/main/patches/fix_build_error.patch)
+- [Fix same UDP port for both PFCP request and response](https://github.com/s5uishida/install_oai_upf/blob/main/patches/fix_same_port_for_pfcp_req_res.patch)
   ```
-  # wget https://raw.githubusercontent.com/s5uishida/install_oai_upf/refs/heads/main/patches/fix_build_error.patch
+  # wget https://raw.githubusercontent.com/s5uishida/install_oai_upf/refs/heads/main/patches/fix_same_port_for_pfcp_req_res.patch
   ```
 
 <a id="clone"></a>
@@ -180,8 +181,8 @@ Finally, get the patches to fix some building errors.
 # cd ~
 # git clone https://github.com/openairinterface/oai-cn5g-upf
 # cd oai-cn5g-upf
-# git checkout develop
-# git reset --hard 4b9190a4e1bf9d6d8fa2d8d9c593ce22f6f0b264
+# git checkout simple-switch-perf
+# git reset --hard 4a8d40580b78047f6a2bde8508f7d35354834602
 # git submodule update --init --recursive
 ```
 
@@ -191,14 +192,13 @@ Finally, get the patches to fix some building errors.
 
 ```
 # cd ~/oai-cn5g-upf/build/common-build
-# git checkout ubuntu_24_support_test
-# git reset --hard 49d14614762b8ee8e8184b11102251cc451f0c3d
+# git checkout ubuntu-24-support-only
+# git reset --hard d3e71d94b3b8dc80f9d651ca0e0b2ec03f153100
 # cd ~/oai-cn5g-upf/src/common-src
 # git checkout u24-support-develop
 # git reset --hard c0dcc9aa70da170b3dcd690a34e704be4199f3fd
 # cd ~/oai-cn5g-upf
 # patch -p1 < ~/build_u24.patch
-# patch -p1 < ~/fix_build_error.patch
 ```
 
 <a id="apply_patch_open5gs"></a>
@@ -209,6 +209,7 @@ Finally, get the patches to fix some building errors.
 # cd ~/oai-cn5g-upf
 # patch -p1 < ~/feat_ohr_gtpu_udp_ip.patch
 # patch -p1 < ~/install_qer_tc_kern_c_o.patch
+# patch -p1 < ~/fix_same_port_for_pfcp_req_res.patch
 ```
 
 <a id="build_install"></a>
@@ -328,6 +329,8 @@ upf:
     max_sdf_filters_per_pdu_session: 8
     max_sdf_filter_string_length: 512
     max_upf_interfaces: 4
+    n3_rx_threads: 1
+    dl_rx_queues: 1
     max_upf_redirect_interfaces: 2
     max_arp_entries: 256
     max_application_ids_per_session: 8
@@ -473,323 +476,325 @@ Then run UPF.
 
 Trying to read .yaml configuration file: config.yaml
 LTTNG Tracing disabled at build-time!
-[2026-09-12 07:24:01.074] [upf_app] [start] ==============================================================================
-[2026-09-12 07:24:01.074] [upf_app] [start]                      5G User Plane Function (UPF)
-[2026-09-12 07:24:01.074] [upf_app] [start]                         OpenAirInterface
-[2026-09-12 07:24:01.074] [upf_app] [start]                       3GPP Rel-17 Compliant
-[2026-09-12 07:24:01.074] [upf_app] [start] ==============================================================================
-[2026-09-12 07:24:01.074] [upf_app] [start] 
-[2026-09-12 07:24:01.074] [upf_app] [start] ┌─────────────────────────────────────────────────────────────────────────────┐
-[2026-09-12 07:24:01.074] [upf_app] [start] │                           VERSION INFORMATION                               │
-[2026-09-12 07:24:01.074] [upf_app] [start] ├──────────────────────────────┬──────────────────────────────────────────────┤
-[2026-09-12 07:24:01.074] [upf_app] [start] │ Git Branch                   │ develop                                      │
-[2026-09-12 07:24:01.074] [upf_app] [start] │ Git Commit Hash              │ 4b9190a                                      │
-[2026-09-12 07:24:01.074] [upf_app] [start] │ Git Commit Date              │ Wed Sep 9 11:42:19 2026 +0200                │
-[2026-09-12 07:24:01.074] [upf_app] [start] │ Build Time                   │ 2026-09-12 05:13:13                          │
-[2026-09-12 07:24:01.074] [upf_app] [start] │ 3GPP Release                 │ Rel-17                                       │
-[2026-09-12 07:24:01.074] [upf_app] [start] ├──────────────────────────────┼──────────────────────────────────────────────┤
-[2026-09-12 07:24:01.074] [upf_app] [start] │ Kernel Version               │ 6.8.0-139-generic                            │
-[2026-09-12 07:24:01.074] [upf_app] [start] │ libbpf Version               │ 1.5                                          │
-[2026-09-12 07:24:01.074] [upf_app] [start] │ Compiler                     │ GCC 13.3.0                                   │
-[2026-09-12 07:24:01.074] [upf_app] [start] │ Architecture                 │ x86_64                                       │
-[2026-09-12 07:24:01.074] [upf_app] [start] │ System Uptime                │ 0d 0h 22m                                    │
-[2026-09-12 07:24:01.074] [upf_app] [start] │ UPF Process Uptime           │ 0d 0h 0m                                     │
-[2026-09-12 07:24:01.074] [upf_app] [start] ├──────────────────────────────┼──────────────────────────────────────────────┤
-[2026-09-12 07:24:01.074] [upf_app] [start] │ Bug Reports                  │ openaircn-user@lists.eurecom.fr              │
-[2026-09-12 07:24:01.074] [upf_app] [start] └──────────────────────────────┴──────────────────────────────────────────────┘
-[2026-09-12 07:24:01.074] [upf_app] [start] 
-[2026-09-12 07:24:01.074] [upf_app] [start] Options parsed
-[2026-09-12 07:24:01.074] [config ] [info] Reading NF configuration from config.yaml
-[2026-09-12 07:24:01.081] [config ] [debug] Validating configuration of log_level
-[2026-09-12 07:24:01.085] [config ] [info] Validating UPF datapath configuration...
-[2026-09-12 07:24:01.085] [config ] [info] Estimated BPF map memory usage: 0 MB
-[2026-09-12 07:24:01.085] [config ] [info] UPF configuration validation successful
-[2026-09-12 07:24:01.086] [config ] [info] Datapath configuration transferred: max_pdu_sessions=100, max_upf_interfaces=4, max_arp_entries=256
-[2026-09-12 07:24:01.086] [config ] [info] ==== OPENAIRINTERFACE upf vBranch: develop Abrev. Hash: 4b9190a Date: Wed Sep 9 11:42:19 2026 +0200 ====
-[2026-09-12 07:24:01.086] [config ] [info] Basic Configuration:
-[2026-09-12 07:24:01.086] [config ] [info]   - log_level..................................: info
-[2026-09-12 07:24:01.086] [config ] [info]   - register_nf................................: No
-[2026-09-12 07:24:01.086] [config ] [info]   - http_version...............................: 2
-[2026-09-12 07:24:01.086] [config ] [info]   TLS:
-[2026-09-12 07:24:01.086] [config ] [info]     - Enable TLS.................................: No
-[2026-09-12 07:24:01.086] [config ] [info]   - HTTP Request Timeout.......................: 3000 (ms)
-[2026-09-12 07:24:01.086] [config ] [info] UPF Configuration:
-[2026-09-12 07:24:01.086] [config ] [info]   - host.......................................: 192.168.14.151
-[2026-09-12 07:24:01.086] [config ] [info]   - SBI
-[2026-09-12 07:24:01.086] [config ] [info]     + URL......................................: 192.168.14.151:8080
-[2026-09-12 07:24:01.086] [config ] [info]     + API Version..............................: v1
-[2026-09-12 07:24:01.086] [config ] [info]     + IPv4 Address ............................: 192.168.14.151
-[2026-09-12 07:24:01.086] [config ] [info]   - N3:
-[2026-09-12 07:24:01.086] [config ] [info]     + Port.....................................: 2152
-[2026-09-12 07:24:01.086] [config ] [info]     + IPv4 Address ............................: 192.168.13.151
-[2026-09-12 07:24:01.086] [config ] [info]     + MTU......................................: 1500
-[2026-09-12 07:24:01.086] [config ] [info]     + Interface name: .........................: ens20
-[2026-09-12 07:24:01.086] [config ] [info]     + Network Instance.........................: internet
-[2026-09-12 07:24:01.086] [config ] [info]   - N4:
-[2026-09-12 07:24:01.086] [config ] [info]     + Port.....................................: 8805
-[2026-09-12 07:24:01.086] [config ] [info]     + IPv4 Address ............................: 192.168.14.151
-[2026-09-12 07:24:01.086] [config ] [info]     + MTU......................................: 1500
-[2026-09-12 07:24:01.086] [config ] [info]     + Interface name: .........................: ens21
-[2026-09-12 07:24:01.086] [config ] [info]   - N6:
-[2026-09-12 07:24:01.086] [config ] [info]     + Port.....................................: 2152
-[2026-09-12 07:24:01.086] [config ] [info]     + IPv4 Address ............................: 192.168.16.151
-[2026-09-12 07:24:01.086] [config ] [info]     + MTU......................................: 1500
-[2026-09-12 07:24:01.086] [config ] [info]     + Interface name: .........................: ens22
-[2026-09-12 07:24:01.086] [config ] [info]     + Network Instance.........................: internet
-[2026-09-12 07:24:01.086] [config ] [info]   - Instance ID................................: 0
-[2026-09-12 07:24:01.086] [config ] [info]   - Remote N6 Gateway..........................: 192.168.16.152
-[2026-09-12 07:24:01.086] [config ] [info]   - Support Features:
-[2026-09-12 07:24:01.086] [config ] [info]     + Enable BPF Datapath......................: Yes
-[2026-09-12 07:24:01.086] [config ] [info]     + Enable QoS Enforcement  (QER)............: Yes
-[2026-09-12 07:24:01.086] [config ] [info]     + Enable Usage Reporting  (URR)............: No
-[2026-09-12 07:24:01.086] [config ] [info]     + Enable Buffering Action (BAR)............: No
-[2026-09-12 07:24:01.086] [config ] [info]     + Enable Multi Access     (MAR)............: No
-[2026-09-12 07:24:01.086] [config ] [info]     + Enable SNAT..............................: No
-[2026-09-12 07:24:01.086] [config ] [info]     + Enable Framed Routing....................: No
-[2026-09-12 07:24:01.086] [config ] [info]     + Enable Ethernet PDU Sessions.............: No
-[2026-09-12 07:24:01.086] [config ] [info]   + upf_info:
-[2026-09-12 07:24:01.086] [config ] [info]     - snssai_upf_info_item:
-[2026-09-12 07:24:01.086] [config ] [info]       + snssai:
-[2026-09-12 07:24:01.086] [config ] [info]         - sst..................................: 1
-[2026-09-12 07:24:01.086] [config ] [info]         - sd...................................: FFFFFF
-[2026-09-12 07:24:01.086] [config ] [info]       + dnns:
-[2026-09-12 07:24:01.086] [config ] [info]         - dnn..................................: internet
-[2026-09-12 07:24:01.086] [config ] [info] Peer NF Configuration:
-[2026-09-12 07:24:01.086] [config ] [info]   NRF:
-[2026-09-12 07:24:01.086] [config ] [info]     - host.....................................: 192.168.14.111
-[2026-09-12 07:24:01.086] [config ] [info]     - SBI
-[2026-09-12 07:24:01.086] [config ] [info]       + URL....................................: 192.168.14.111:8080
-[2026-09-12 07:24:01.086] [config ] [info]       + API Version............................: v1
-[2026-09-12 07:24:01.086] [config ] [info]   SMF:
-[2026-09-12 07:24:01.086] [config ] [info]     - host.....................................: 192.168.14.111
-[2026-09-12 07:24:01.086] [config ] [info]     - SBI
-[2026-09-12 07:24:01.086] [config ] [info]       + URL....................................: 192.168.14.111:8080
-[2026-09-12 07:24:01.086] [config ] [info]       + API Version............................: v1
-[2026-09-12 07:24:01.086] [config ] [info] DNNs:
-[2026-09-12 07:24:01.086] [config ] [info] - DNN:
-[2026-09-12 07:24:01.086] [config ] [info]     + DNN......................................: internet
-[2026-09-12 07:24:01.086] [config ] [info]     + PDU session type.........................: IPV4
-[2026-09-12 07:24:01.086] [config ] [info]     + IPv4 subnet..............................: 10.45.0.0/16
-[2026-09-12 07:24:01.086] [config ] [info]     + DNS Settings:
-[2026-09-12 07:24:01.086] [config ] [info]       - primary_dns_ipv4.......................: 8.8.8.8
-[2026-09-12 07:24:01.086] [config ] [info]       - secondary_dns_ipv4.....................: 1.1.1.1
-[2026-09-12 07:24:01.086] [upf_app] [info] HTTP Client successfully initiated on interface ens21 with timeout 3000 ms, HTTP version 2
-[2026-09-12 07:24:01.086] [common] [start] Starting...
-[2026-09-12 07:24:01.086] [common] [start] Started
-[2026-09-12 07:24:01.086] [asc_cmd] [start] Starting...
-[2026-09-12 07:24:01.086] [common] [info] Starting timer_manager_task
-[2026-09-12 07:24:01.087] [asc_cmd] [start] Started
-[2026-09-12 07:24:01.087] [upf_app] [start] UPF initialization started
-[2026-09-12 07:24:01.089] [pfcp   ] [info] pfcp_l4_stack created listening to 192.168.14.151:8805
-[2026-09-12 07:24:01.089] [upf_n4 ] [start] Starting...
-[2026-09-12 07:24:01.090] [upf_n4 ] [start] Started
-[2026-09-12 07:24:01.090] [upf_app] [info] GTP interface: ens20
-[2026-09-12 07:24:01.090] [upf_app] [info] Non-GTP interface: ens22
-[2026-09-12 07:24:01.090] [upf_app] [info] Setting up User Plane Component
-[2026-09-12 07:24:01.091] [upf_app] [info] UPF_XDPProgram initialized
-[2026-09-12 07:24:01.091] [upf_app] [info] PDU Session type: IP
-[2026-09-12 07:24:01.091] [upf_app] [info] 
-[2026-09-12 07:24:01.091] [upf_app] [info]  Interface attachment (XDP hook)
-[2026-09-12 07:24:01.091] [upf_app] [info]   ├─ N3EntryProgram:            created  (iface=ens20, dir=UL, XDP)
-[2026-09-12 07:24:01.091] [upf_app] [info]   └─ N6EntryProgram:            created  (iface=ens22, dir=DL, XDP)
-[2026-09-12 07:24:01.091] [upf_app] [info] 
-[2026-09-12 07:24:01.091] [upf_app] [info]  Tail-call pipeline (shared prog_array)
-[2026-09-12 07:24:01.091] [upf_app] [info]   ├─ SessionLookupIPProgram:    created  (session-lkp, XDP, slot=0)
-[2026-09-12 07:24:01.091] [upf_app] [info]   ├─ PdrMatchProgram:           created  (rule-match,  XDP, slot=2)
-[2026-09-12 07:24:01.091] [upf_app] [info]   ├─ FARProgram:                created  (rule-apply,  XDP, slot=3)
-[2026-09-12 07:24:01.091] [upf_app] [info]   └─ QERProgram:                created  (rule-apply,  XDP, slot=4)
-[2026-09-12 07:24:01.091] [upf_app] [info]       └─ QERTCProgram:          created  (qos-enforce, TC,  per-session)
-[2026-09-12 07:24:01.091] [upf_app] [info] 
-[2026-09-12 07:24:01.102] [upf_app] [info] [N6EntryProgram] XDP 'xdp_n6_entry' attached to ens22 (ifindex=6, mode=native (driver mode))
-[2026-09-12 07:24:01.112] [upf_app] [info] 
-[2026-09-12 07:24:01.112] [upf_app] [info]  Interface attachment (XDP hook)
-[2026-09-12 07:24:01.112] [upf_app] [info]   ├─ N3EntryProgram:              loaded ✓  (3 maps, iface=ens20)
-[2026-09-12 07:24:01.112] [upf_app] [info]   └─ N6EntryProgram:              loaded ✓  (3 maps, iface=ens22)
-[2026-09-12 07:24:01.112] [upf_app] [info] 
-[2026-09-12 07:24:01.112] [upf_app] [info]  Tail-call pipeline (shared prog_array)
-[2026-09-12 07:24:01.112] [upf_app] [info]   ├─ SessionLookupIPProgram:      loaded ✓  (5 maps)
-[2026-09-12 07:24:01.112] [upf_app] [info]   ├─ PdrMatchProgram:             loaded ✓  (5 maps)
-[2026-09-12 07:24:01.112] [upf_app] [info]   ├─ FARProgram:                  loaded ✓  (8 maps)
-[2026-09-12 07:24:01.112] [upf_app] [info]   └─ QERProgram:                  loaded ✓  (3 maps)
-[2026-09-12 07:24:01.112] [upf_app] [info]       └─ QERTCProgram:            loaded ✓  (TC-BPF, per-session)
-[2026-09-12 07:24:01.112] [upf_app] [info] 
-[2026-09-12 07:24:01.112] [upf_app] [info] UPF_XDPProgram: all programs loaded
-[2026-09-12 07:24:01.112] [upf_app] [info] UPF_XDPProgram: Maps initialization completed
-[2026-09-12 07:24:01.112] [upf_app] [info] UPF_XDPProgram: attaching IP PDU primary (n3_entry)
-[2026-09-12 07:24:01.118] [upf_app] [info] [N3EntryProgram] XDP 'xdp_n3_entry' attached to ens20 (ifindex=4, mode=native (driver mode))
-[2026-09-12 07:24:01.118] [upf_app] [info] redirect_interfaces_map populated: DOWNLINK[0]=ifindex(ens20)=4  UPLINK[1]=ifindex(ens22)=6
-[2026-09-12 07:24:01.119] [upf_app] [info] UPF_XDPProgram::Setup complete
-[2026-09-12 07:24:01.119] [upf_app] [info] Session Manager initialized
-[2026-09-12 07:24:01.119] [upf_app] [info] 
-[2026-09-12 07:24:01.119] [upf_app] [info]  Data Plane setup complete
-[2026-09-12 07:24:01.119] [upf_app] [info]   ├─ PDU Session Type  :  IP
-[2026-09-12 07:24:01.119] [upf_app] [info]   ├─ QoS Enforcement   :  ✓ on
-[2026-09-12 07:24:01.119] [upf_app] [info]   ├─ URR Reporting     :  ✗ off
-[2026-09-12 07:24:01.119] [upf_app] [info]   ├─ BAR Buffering     :  ✗ off
-[2026-09-12 07:24:01.119] [upf_app] [info]   ├─ MAR Steering      :  ✗ off
-[2026-09-12 07:24:01.119] [upf_app] [info]   └─ Pipeline slots    :  4
-[2026-09-12 07:24:01.119] [upf_app] [info] 
-[2026-09-12 07:24:01.119] [upf_app] [start] ┌─────────────────────────────────────────────────────────────────────────────┐
-[2026-09-12 07:24:01.119] [upf_app] [start] │                    Data-Path CONFIGURATION SUMMARY                          │
-[2026-09-12 07:24:01.119] [upf_app] [start] └─────────────────────────────────────────────────────────────────────────────┘
-[2026-09-12 07:24:01.119] [upf_app] [start] 
-[2026-09-12 07:24:01.119] [upf_app] [start] ┌─────────────────────────────────────────────────────────────────────────────┐
-[2026-09-12 07:24:01.119] [upf_app] [start] │                      NETWORK INTERFACE CONFIGURATION                        │
-[2026-09-12 07:24:01.119] [upf_app] [start] ├──────────────────┬──────────────────────┬───────────────────┬───────────────┤
-[2026-09-12 07:24:01.119] [upf_app] [start] │ 3GPP Ref Point   │ Interface            │ IP Address        │ ifindex       │
-[2026-09-12 07:24:01.119] [upf_app] [start] ├──────────────────┼──────────────────────┼───────────────────┼───────────────┤
-[2026-09-12 07:24:01.119] [upf_app] [start] │ N3 (GTP-U)       │ ens20                │ 192.168.13.151    │ 4             │
-[2026-09-12 07:24:01.119] [upf_app] [start] │ N4 (PFCP)        │ ens21                │ 192.168.14.151    │ 5             │
-[2026-09-12 07:24:01.119] [upf_app] [start] │ N6 (Data Network)│ ens22                │ 192.168.16.151    │ 6             │
-[2026-09-12 07:24:01.119] [upf_app] [start] └──────────────────┴──────────────────────┴───────────────────┴───────────────┘
-[2026-09-12 07:24:01.119] [upf_app] [start] 
-[2026-09-12 07:24:01.119] [upf_app] [start] ┌─────────────────────────────────────────────────────────────────────────────┐
-[2026-09-12 07:24:01.119] [upf_app] [start] │                         FEATURE CONFIGURATION                               │
-[2026-09-12 07:24:01.119] [upf_app] [start] ├──────────────────────────────────────┬──────────────────────────────────────┤
-[2026-09-12 07:24:01.119] [upf_app] [start] │ Feature                              │ Status                               │
-[2026-09-12 07:24:01.119] [upf_app] [start] ├──────────────────────────────────────┼──────────────────────────────────────┤
-[2026-09-12 07:24:01.119] [upf_app] [start] │ eBPF/XDP Data Plane                  │ ✓ Enabled                            │
-[2026-09-12 07:24:01.119] [upf_app] [start] │ QoS Enforcement (TC-BPF)             │ ✓ Enabled                            │
-[2026-09-12 07:24:01.119] [upf_app] [start] │ Framed Routing                       │ ✗ Disabled                           │
-[2026-09-12 07:24:01.119] [upf_app] [start] │ Usage Reporting (URR)                │ ✗ Disabled                           │
-[2026-09-12 07:24:01.119] [upf_app] [start] │ Packet Buffering (BAR)               │ ✗ Disabled                           │
-[2026-09-12 07:24:01.119] [upf_app] [start] │ Multi-Access Steering (MAR)          │ ✗ Disabled                           │
-[2026-09-12 07:24:01.119] [upf_app] [start] │ Ethernet PDU Sessions                │ ✗ Disabled                           │
-[2026-09-12 07:24:01.119] [upf_app] [start] └──────────────────────────────────────┴──────────────────────────────────────┘
-[2026-09-12 07:24:01.119] [upf_app] [start] 
-[2026-09-12 07:24:01.119] [upf_app] [start] ┌─────────────────────────────────────────────────────────────────────────────┐
-[2026-09-12 07:24:01.119] [upf_app] [start] │                       BPF MAP CAPACITY CONFIGURATION                        │
-[2026-09-12 07:24:01.119] [upf_app] [start] ├──────────────────────────────────────┬──────────────────────────────────────┤
-[2026-09-12 07:24:01.119] [upf_app] [start] │ Map Name                             │ Max Entries                          │
-[2026-09-12 07:24:01.119] [upf_app] [start] ├──────────────────────────────────────┼──────────────────────────────────────┤
-[2026-09-12 07:24:01.119] [upf_app] [start] │ session_by_ue_ip_map                 │ 100                                  │
-[2026-09-12 07:24:01.119] [upf_app] [start] │ session_rules_enabled_map            │ 100                                  │
-[2026-09-12 07:24:01.119] [upf_app] [start] │ pdrs_per_session_map                 │ 8                                    │
-[2026-09-12 07:24:01.119] [upf_app] [start] │ rules_match_pdr_map                  │ 800                                  │
-[2026-09-12 07:24:01.119] [upf_app] [start] │ sdf_filters_map                      │ 800                                  │
-[2026-09-12 07:24:01.119] [upf_app] [start] │ upf_interface_map                    │ 4                                    │
-[2026-09-12 07:24:01.119] [upf_app] [start] │ redirect_interfaces_map              │ 2                                    │
-[2026-09-12 07:24:01.119] [upf_app] [start] │ arp_table_map                        │ 256                                  │
-[2026-09-12 07:24:01.119] [upf_app] [start] │ egress_ifindex                       │ 4                                    │
-[2026-09-12 07:24:01.119] [upf_app] [start] └──────────────────────────────────────┴──────────────────────────────────────┘
-[2026-09-12 07:24:01.119] [upf_app] [start] 
-[2026-09-12 07:24:01.119] [upf_app] [start] ┌──────────────────────────────────────┬────────────┬────────────┬────────────┐
-[2026-09-12 07:24:01.119] [upf_app] [start] │ Program                              │ Dispatch   │ Slot       │ Status     │
-[2026-09-12 07:24:01.119] [upf_app] [start] ├──────────────────────────────────────┴────────────┴────────────┴────────────┤
-[2026-09-12 07:24:01.119] [upf_app] [start] │        PDU Session : IP            N3 = ens20            N6 = ens22         │
-[2026-09-12 07:24:01.119] [upf_app] [start] ├──────────────────────────────────────┬────────────┬────────────┬────────────┤
-[2026-09-12 07:24:01.119] [upf_app] [start] │ N3EntryProgram                       │ XDP hook   │ -          │ ✓ loaded   │
-[2026-09-12 07:24:01.119] [upf_app] [start] │ N6EntryProgram                       │ XDP hook   │ -          │ ✓ loaded   │
-[2026-09-12 07:24:01.119] [upf_app] [start] ├─────────────────────────────────────────────────────────────────────────────┤
-[2026-09-12 07:24:01.119] [upf_app] [start] │        Tail-call pipeline  (shared prog_array, XDP driver context)          │
-[2026-09-12 07:24:01.119] [upf_app] [start] ├──────────────────────────────────────┬────────────┬────────────┬────────────┤
-[2026-09-12 07:24:01.119] [upf_app] [start] │ SessionLookupIPProgram               │ tail-call  │ 0          │ ✓ loaded   │
-[2026-09-12 07:24:01.119] [upf_app] [start] │ PdrMatchProgram                      │ tail-call  │ 2          │ ✓ loaded   │
-[2026-09-12 07:24:01.119] [upf_app] [start] │ FARProgram                           │ tail-call  │ 3          │ ✓ loaded   │
-[2026-09-12 07:24:01.119] [upf_app] [start] │ QERProgram                           │ tail-call  │ 4          │ ✓ loaded   │
-[2026-09-12 07:24:01.119] [upf_app] [start] │ QERTCProgram                         │ TC hook    │ TC         │ ✓ loaded   │
-[2026-09-12 07:24:01.119] [upf_app] [start] │ URRProgram                           │ tail-call  │ 5          │ — skipped  │
-[2026-09-12 07:24:01.119] [upf_app] [start] │ BARProgram                           │ tail-call  │ 6          │ — skipped  │
-[2026-09-12 07:24:01.119] [upf_app] [start] │ MARProgram                           │ tail-call  │ 7          │ — skipped  │
-[2026-09-12 07:24:01.119] [upf_app] [start] └──────────────────────────────────────┴────────────┴────────────┴────────────┘
-[2026-09-12 07:24:01.119] [upf_app] [start] 
-[2026-09-12 07:24:01.119] [upf_app] [start] ┌───────────────────────────┬────┬────┬────┬────┬────┬────┬────┐
-[2026-09-12 07:24:01.119] [upf_app] [start] │ BPF Map                   │ N3 │ N6 │SLk │PDR │FAR │QER │QTC │
-[2026-09-12 07:24:01.119] [upf_app] [start] ├───────────────────────────┴────┴────┴────┴────┴────┴────┴────┤
-[2026-09-12 07:24:01.119] [upf_app] [start] │  shared infrastructure                                       │
-[2026-09-12 07:24:01.119] [upf_app] [start] ├───────────────────────────┬────┬────┬────┬────┬────┬────┬────┤
-[2026-09-12 07:24:01.119] [upf_app] [start] │ tail_call_progs_map       │ ✓  │ ✓  │ ✓  │    │    │    │    │
-[2026-09-12 07:24:01.119] [upf_app] [start] │ packet_context_map        │ ✓  │ ✓  │ ✓  │ ✓  │ ✓  │ ✓  │    │
-[2026-09-12 07:24:01.119] [upf_app] [start] │ mc_stats_map              │ ✓  │ ✓  │ ✓  │ ✓  │ ✓  │ ✓  │    │
-[2026-09-12 07:24:01.119] [upf_app] [start] ├───────────────────────────┴────┴────┴────┴────┴────┴────┴────┤
-[2026-09-12 07:24:01.119] [upf_app] [start] │  session / pipeline                                          │
-[2026-09-12 07:24:01.119] [upf_app] [start] ├───────────────────────────┬────┬────┬────┬────┬────┬────┬────┤
-[2026-09-12 07:24:01.119] [upf_app] [start] │ session_by_ue_ip_map      │    │    │ ✓  │    │    │    │    │
-[2026-09-12 07:24:01.119] [upf_app] [start] │ session_rules_enabled_map │    │    │ ✓  │    │    │    │    │
-[2026-09-12 07:24:01.119] [upf_app] [start] │ pdrs_per_session_map      │    │    │    │ ✓  │    │    │    │
-[2026-09-12 07:24:01.119] [upf_app] [start] │ sdf_filters_map           │    │    │    │ ✓  │    │    │    │
-[2026-09-12 07:24:01.119] [upf_app] [start] │ rules_match_pdr_map       │    │    │    │    │ ✓  │ ✓  │    │
-[2026-09-12 07:24:01.119] [upf_app] [start] ├───────────────────────────┴────┴────┴────┴────┴────┴────┴────┤
-[2026-09-12 07:24:01.119] [upf_app] [start] │  interface / ARP                                             │
-[2026-09-12 07:24:01.119] [upf_app] [start] ├───────────────────────────┬────┬────┬────┬────┬────┬────┬────┤
-[2026-09-12 07:24:01.119] [upf_app] [start] │ upf_interface_map         │    │    │    │    │ ✓  │    │    │
-[2026-09-12 07:24:01.119] [upf_app] [start] │ redirect_interfaces_map   │    │    │    │    │ ✓  │    │    │
-[2026-09-12 07:24:01.119] [upf_app] [start] │ arp_table_map             │    │    │    │    │ ✓  │    │    │
-[2026-09-12 07:24:01.119] [upf_app] [start] │ egress_ifindex            │    │    │    │    │    │    │ ✓  │
-[2026-09-12 07:24:01.119] [upf_app] [start] └───────────────────────────┴────┴────┴────┴────┴────┴────┴────┘
-[2026-09-12 07:24:01.119] [upf_app] [start] 
-[2026-09-12 07:24:01.119] [upf_app] [start] 
-[2026-09-12 07:24:01.119] [upf_app] [start]                                    OnNewPacket ●
-[2026-09-12 07:24:01.119] [upf_app] [start]                                          │
-[2026-09-12 07:24:01.119] [upf_app] [start]                                          ▼
-[2026-09-12 07:24:01.119] [upf_app] [start]   ┌─────────────────────────────────────────────────────────────────────────────┐
-[2026-09-12 07:24:01.119] [upf_app] [start]   │ N3EntryProgram  (GTP-U → DN)                             [entry-point  XDP] │
-[2026-09-12 07:24:01.119] [upf_app] [start]   │ N6EntryProgram  (DN → GTP-U)                             [entry-point  XDP] │
-[2026-09-12 07:24:01.119] [upf_app] [start]   ├─────────────────────────────────────────────────────────────────────────────┤
-[2026-09-12 07:24:01.119] [upf_app] [start]   │  Parse direction (GTP-U / UDP)                                              │
-[2026-09-12 07:24:01.119] [upf_app] [start]   │  Session lookup (TEID / UE-IP)  ◄──── [session_by_ue_ip_map]                │
-[2026-09-12 07:24:01.119] [upf_app] [start]   └─────────────────────────────────────────────────────────────────────────────┘
-[2026-09-12 07:24:01.119] [upf_app] [start]                                          │
-[2026-09-12 07:24:01.119] [upf_app] [start]                   ┌──────────────────────┘
-[2026-09-12 07:24:01.119] [upf_app] [start]                   ▼
-[2026-09-12 07:24:01.119] [upf_app] [start]   ┌──────────────────────────────┐               ┌──────────────────────────────┐
-[2026-09-12 07:24:01.119] [upf_app] [start]   │ SessionLookupIPProgram       │               │ PdrMatchProgram              │
-[2026-09-12 07:24:01.119] [upf_app] [start]   │  [session-lkp  XDP]          │               │  [rule-match   XDP]          │
-[2026-09-12 07:24:01.119] [upf_app] [start]   ├──────────────────────────────┤─ tail-call ──►├──────────────────────────────┤
-[2026-09-12 07:24:01.119] [upf_app] [start]   │  Get SEID + PDR list         │               │  Match PDR (TEID/UE-IP/SDF)  │
-[2026-09-12 07:24:01.119] [upf_app] [start]   │  Get rules enabled flags     │               │  Get matched 3GPP rules      │
-[2026-09-12 07:24:01.119] [upf_app] [start]   └──────────────────────────────┘               └──────────────────────────────┘
-[2026-09-12 07:24:01.119] [upf_app] [start]                                                                  │
-[2026-09-12 07:24:01.119] [upf_app] [start]                                          ┌───────────────────────┘
-[2026-09-12 07:24:01.119] [upf_app] [start]                                          ▼
-[2026-09-12 07:24:01.119] [upf_app] [start]   ┌─────────────────────────────────────────────────────────────────────────────┐
-[2026-09-12 07:24:01.119] [upf_app] [start]   │ FARProgram                                               [rule-apply   XDP] │
-[2026-09-12 07:24:01.119] [upf_app] [start]   ├─────────────────────────────────────────────────────────────────────────────┤
-[2026-09-12 07:24:01.119] [upf_app] [start]   │  FAR action (FORW / BUFF / DROP)                                            │
-[2026-09-12 07:24:01.119] [upf_app] [start]   │  GTP-U outer header creation    ◄──── [upf_interface_map]                   │
-[2026-09-12 07:24:01.119] [upf_app] [start]   │  L2 rewrite (ARP resolution)    ◄──── [arp_table_map]                       │
-[2026-09-12 07:24:01.119] [upf_app] [start]   │  Redirect to N3/N6              ◄──── [redirect_interfaces_map]             │
-[2026-09-12 07:24:01.119] [upf_app] [start]   └─────────────────────────────────────────────────────────────────────────────┘
-[2026-09-12 07:24:01.119] [upf_app] [start]   [QER enabled]                          │
-[2026-09-12 07:24:01.119] [upf_app] [start]                   ┌──────────────────────┘
-[2026-09-12 07:24:01.119] [upf_app] [start]                   ▼
-[2026-09-12 07:24:01.119] [upf_app] [start]   ┌──────────────────────────────┐
-[2026-09-12 07:24:01.119] [upf_app] [start]   │ QERProgram                   │
-[2026-09-12 07:24:01.119] [upf_app] [start]   │  [rule-apply   XDP]          │
-[2026-09-12 07:24:01.119] [upf_app] [start]   ├──────────────────────────────┤
-[2026-09-12 07:24:01.119] [upf_app] [start]   │  Gate check (UL/DL open)     │
-[2026-09-12 07:24:01.119] [upf_app] [start]   │  QFI flow classification     │
-[2026-09-12 07:24:01.119] [upf_app] [start]   └──────────────────────────────┘
-[2026-09-12 07:24:01.119] [upf_app] [start]               [QER-TC: TC egress, downlink only] │
-[2026-09-12 07:24:01.119] [upf_app] [start]                   └──────────────────────┐
-[2026-09-12 07:24:01.119] [upf_app] [start]                                          ▼
-[2026-09-12 07:24:01.119] [upf_app] [start]   ┌─────────────────────────────────────────────────────────────────────────────┐
-[2026-09-12 07:24:01.119] [upf_app] [start]   │ QERTCProgram                                             [qos-enforce   TC] │
-[2026-09-12 07:24:01.120] [upf_app] [start]   ├─────────────────────────────────────────────────────────────────────────────┤
-[2026-09-12 07:24:01.120] [upf_app] [start]   │  HTB: per-session MBR/GBR per QFI                                           │
-[2026-09-12 07:24:01.120] [upf_app] [start]   │  TC classifier redirect         ◄──── [egress_ifindex_map]                  │
-[2026-09-12 07:24:01.120] [upf_app] [start]   │  ● XDP_REDIRECT → N3 (GTP-U encap) → gNB                                    │
-[2026-09-12 07:24:01.120] [upf_app] [start]   └─────────────────────────────────────────────────────────────────────────────┘
-[2026-09-12 07:24:01.120] [upf_app] [start] 
-[2026-09-12 07:24:01.120] [upf_app] [start] ┌─────────────────────────────────────────────────────────────────────────────┐
-[2026-09-12 07:24:01.120] [upf_app] [start] │                    eBPF/XDP RUNTIME CONFIGURATION                           │
-[2026-09-12 07:24:01.120] [upf_app] [start] ├──────────────────────────────────────┬──────────────────────────────────────┤
-[2026-09-12 07:24:01.120] [upf_app] [start] │ Component                            │ Status                               │
-[2026-09-12 07:24:01.120] [upf_app] [start] ├──────────────────────────────────────┼──────────────────────────────────────┤
-[2026-09-12 07:24:01.120] [upf_app] [start] │ N3 XDP Mode                          │ Native (Hardware)                    │
-[2026-09-12 07:24:01.120] [upf_app] [start] │ N6 XDP Mode                          │ Native (Hardware)                    │
-[2026-09-12 07:24:01.120] [upf_app] [start] │ QoS Enforcement (TC-BPF)             │ ✓ Enabled                            │
-[2026-09-12 07:24:01.120] [upf_app] [start] │ Total BPF Maps Loaded                │ 72                                   │
-[2026-09-12 07:24:01.120] [upf_app] [start] ├──────────────────────────────────────┼──────────────────────────────────────┤
-[2026-09-12 07:24:01.120] [upf_app] [start] │ Expected Throughput                  │ ~10+ Gbps (Native XDP)               │
-[2026-09-12 07:24:01.120] [upf_app] [start] │ Hardware Acceleration                │ ✓ Enabled (Native XDP)               │
-[2026-09-12 07:24:01.120] [upf_app] [start] └──────────────────────────────────────┴──────────────────────────────────────┘
-[2026-09-12 07:24:01.120] [upf_app] [start] 
-[2026-09-12 07:24:06.120] [upf_app] [start] ==============================================================================
-[2026-09-12 07:24:06.120] [upf_app] [start]                    UPF DATA-PATH INITIALIZATION COMPLETE - READY
-[2026-09-12 07:24:06.120] [upf_app] [start]          Waiting for PFCP Session Establishment requests on N4...
-[2026-09-12 07:24:06.120] [upf_app] [start] ==============================================================================
-[2026-09-12 07:24:06.120] [upf_app] [start] 
+[2026-09-12 22:19:26.528] [upf_app] [start] ==============================================================================
+[2026-09-12 22:19:26.529] [upf_app] [start]                      5G User Plane Function (UPF)
+[2026-09-12 22:19:26.529] [upf_app] [start]                         OpenAirInterface
+[2026-09-12 22:19:26.529] [upf_app] [start]                       3GPP Rel-17 Compliant
+[2026-09-12 22:19:26.529] [upf_app] [start] ==============================================================================
+[2026-09-12 22:19:26.529] [upf_app] [start] 
+[2026-09-12 22:19:26.529] [upf_app] [start] ┌─────────────────────────────────────────────────────────────────────────────┐
+[2026-09-12 22:19:26.529] [upf_app] [start] │                           VERSION INFORMATION                               │
+[2026-09-12 22:19:26.529] [upf_app] [start] ├──────────────────────────────┬──────────────────────────────────────────────┤
+[2026-09-12 22:19:26.529] [upf_app] [start] │ Git Branch                   │ simple-switch-perf                           │
+[2026-09-12 22:19:26.529] [upf_app] [start] │ Git Commit Hash              │ 4a8d405                                      │
+[2026-09-12 22:19:26.529] [upf_app] [start] │ Git Commit Date              │ Thu Sep 10 10:10:31 2026 +0200               │
+[2026-09-12 22:19:26.529] [upf_app] [start] │ Build Time                   │ 2026-09-12 11:40:32                          │
+[2026-09-12 22:19:26.529] [upf_app] [start] │ 3GPP Release                 │ Rel-17                                       │
+[2026-09-12 22:19:26.529] [upf_app] [start] ├──────────────────────────────┼──────────────────────────────────────────────┤
+[2026-09-12 22:19:26.529] [upf_app] [start] │ Kernel Version               │ 6.8.0-139-generic                            │
+[2026-09-12 22:19:26.529] [upf_app] [start] │ libbpf Version               │ 1.5                                          │
+[2026-09-12 22:19:26.529] [upf_app] [start] │ Compiler                     │ GCC 13.3.0                                   │
+[2026-09-12 22:19:26.529] [upf_app] [start] │ Architecture                 │ x86_64                                       │
+[2026-09-12 22:19:26.529] [upf_app] [start] │ System Uptime                │ 0d 0h 58m                                    │
+[2026-09-12 22:19:26.529] [upf_app] [start] │ UPF Process Uptime           │ 0d 0h 0m                                     │
+[2026-09-12 22:19:26.529] [upf_app] [start] ├──────────────────────────────┼──────────────────────────────────────────────┤
+[2026-09-12 22:19:26.529] [upf_app] [start] │ Bug Reports                  │ openaircn-user@lists.eurecom.fr              │
+[2026-09-12 22:19:26.529] [upf_app] [start] └──────────────────────────────┴──────────────────────────────────────────────┘
+[2026-09-12 22:19:26.529] [upf_app] [start] 
+[2026-09-12 22:19:26.529] [upf_app] [start] Options parsed
+[2026-09-12 22:19:26.529] [config ] [info] Reading NF configuration from config.yaml
+[2026-09-12 22:19:26.534] [config ] [debug] Validating configuration of log_level
+[2026-09-12 22:19:26.537] [config ] [info] Validating UPF datapath configuration...
+[2026-09-12 22:19:26.537] [config ] [info] Estimated BPF map memory usage: 0 MB
+[2026-09-12 22:19:26.537] [config ] [info] UPF configuration validation successful
+[2026-09-12 22:19:26.538] [config ] [info] Datapath configuration transferred: max_pdu_sessions=100, max_upf_interfaces=4, max_arp_entries=256, n3_rx_threads=1, dl_rx_queues=1
+[2026-09-12 22:19:26.538] [config ] [info] ==== OPENAIRINTERFACE upf vBranch: simple-switch-perf Abrev. Hash: 4a8d405 Date: Thu Sep 10 10:10:31 2026 +0200 ====
+[2026-09-12 22:19:26.538] [config ] [info] Basic Configuration:
+[2026-09-12 22:19:26.538] [config ] [info]   - log_level..................................: info
+[2026-09-12 22:19:26.538] [config ] [info]   - register_nf................................: No
+[2026-09-12 22:19:26.538] [config ] [info]   - http_version...............................: 2
+[2026-09-12 22:19:26.538] [config ] [info]   TLS:
+[2026-09-12 22:19:26.538] [config ] [info]     - Enable TLS.................................: No
+[2026-09-12 22:19:26.538] [config ] [info]   - HTTP Request Timeout.......................: 3000 (ms)
+[2026-09-12 22:19:26.538] [config ] [info] UPF Configuration:
+[2026-09-12 22:19:26.538] [config ] [info]   - host.......................................: 192.168.14.151
+[2026-09-12 22:19:26.538] [config ] [info]   - SBI
+[2026-09-12 22:19:26.538] [config ] [info]     + URL......................................: 192.168.14.151:8080
+[2026-09-12 22:19:26.538] [config ] [info]     + API Version..............................: v1
+[2026-09-12 22:19:26.538] [config ] [info]     + IPv4 Address ............................: 192.168.14.151
+[2026-09-12 22:19:26.538] [config ] [info]   - N3:
+[2026-09-12 22:19:26.538] [config ] [info]     + Port.....................................: 2152
+[2026-09-12 22:19:26.538] [config ] [info]     + IPv4 Address ............................: 192.168.13.151
+[2026-09-12 22:19:26.538] [config ] [info]     + MTU......................................: 1500
+[2026-09-12 22:19:26.538] [config ] [info]     + Interface name: .........................: ens20
+[2026-09-12 22:19:26.538] [config ] [info]     + Network Instance.........................: internet
+[2026-09-12 22:19:26.538] [config ] [info]   - N4:
+[2026-09-12 22:19:26.538] [config ] [info]     + Port.....................................: 8805
+[2026-09-12 22:19:26.538] [config ] [info]     + IPv4 Address ............................: 192.168.14.151
+[2026-09-12 22:19:26.538] [config ] [info]     + MTU......................................: 1500
+[2026-09-12 22:19:26.538] [config ] [info]     + Interface name: .........................: ens21
+[2026-09-12 22:19:26.538] [config ] [info]   - N6:
+[2026-09-12 22:19:26.538] [config ] [info]     + Port.....................................: 2152
+[2026-09-12 22:19:26.538] [config ] [info]     + IPv4 Address ............................: 192.168.16.151
+[2026-09-12 22:19:26.538] [config ] [info]     + MTU......................................: 1500
+[2026-09-12 22:19:26.538] [config ] [info]     + Interface name: .........................: ens22
+[2026-09-12 22:19:26.538] [config ] [info]     + Network Instance.........................: internet
+[2026-09-12 22:19:26.538] [config ] [info]   - Instance ID................................: 0
+[2026-09-12 22:19:26.538] [config ] [info]   - Remote N6 Gateway..........................: 192.168.16.152
+[2026-09-12 22:19:26.538] [config ] [info]   - Support Features:
+[2026-09-12 22:19:26.538] [config ] [info]     + Enable BPF Datapath......................: Yes
+[2026-09-12 22:19:26.538] [config ] [info]     + Enable QoS Enforcement  (QER)............: Yes
+[2026-09-12 22:19:26.538] [config ] [info]     + Enable Usage Reporting  (URR)............: No
+[2026-09-12 22:19:26.538] [config ] [info]     + Enable Buffering Action (BAR)............: No
+[2026-09-12 22:19:26.538] [config ] [info]     + Enable Multi Access     (MAR)............: No
+[2026-09-12 22:19:26.538] [config ] [info]     + Enable SNAT..............................: No
+[2026-09-12 22:19:26.538] [config ] [info]     + Enable Framed Routing....................: No
+[2026-09-12 22:19:26.538] [config ] [info]     + Enable Ethernet PDU Sessions.............: No
+[2026-09-12 22:19:26.538] [config ] [info]   + upf_info:
+[2026-09-12 22:19:26.538] [config ] [info]     - snssai_upf_info_item:
+[2026-09-12 22:19:26.538] [config ] [info]       + snssai:
+[2026-09-12 22:19:26.538] [config ] [info]         - sst..................................: 1
+[2026-09-12 22:19:26.538] [config ] [info]         - sd...................................: FFFFFF
+[2026-09-12 22:19:26.538] [config ] [info]       + dnns:
+[2026-09-12 22:19:26.538] [config ] [info]         - dnn..................................: internet
+[2026-09-12 22:19:26.538] [config ] [info] Peer NF Configuration:
+[2026-09-12 22:19:26.538] [config ] [info]   NRF:
+[2026-09-12 22:19:26.538] [config ] [info]     - host.....................................: 192.168.14.111
+[2026-09-12 22:19:26.538] [config ] [info]     - SBI
+[2026-09-12 22:19:26.538] [config ] [info]       + URL....................................: 192.168.14.111:8080
+[2026-09-12 22:19:26.538] [config ] [info]       + API Version............................: v1
+[2026-09-12 22:19:26.538] [config ] [info]   SMF:
+[2026-09-12 22:19:26.538] [config ] [info]     - host.....................................: 192.168.14.111
+[2026-09-12 22:19:26.538] [config ] [info]     - SBI
+[2026-09-12 22:19:26.538] [config ] [info]       + URL....................................: 192.168.14.111:8080
+[2026-09-12 22:19:26.538] [config ] [info]       + API Version............................: v1
+[2026-09-12 22:19:26.538] [config ] [info] DNNs:
+[2026-09-12 22:19:26.538] [config ] [info] - DNN:
+[2026-09-12 22:19:26.538] [config ] [info]     + DNN......................................: internet
+[2026-09-12 22:19:26.538] [config ] [info]     + PDU session type.........................: IPV4
+[2026-09-12 22:19:26.538] [config ] [info]     + IPv4 subnet..............................: 10.45.0.0/16
+[2026-09-12 22:19:26.538] [config ] [info]     + DNS Settings:
+[2026-09-12 22:19:26.538] [config ] [info]       - primary_dns_ipv4.......................: 8.8.8.8
+[2026-09-12 22:19:26.538] [config ] [info]       - secondary_dns_ipv4.....................: 1.1.1.1
+[2026-09-12 22:19:26.538] [upf_app] [info] HTTP Client successfully initiated on interface ens21 with timeout 3000 ms, HTTP version 2
+[2026-09-12 22:19:26.538] [common] [start] Starting...
+[2026-09-12 22:19:26.538] [common] [start] Started
+[2026-09-12 22:19:26.538] [asc_cmd] [start] Starting...
+[2026-09-12 22:19:26.538] [common] [info] Starting timer_manager_task
+[2026-09-12 22:19:26.539] [asc_cmd] [start] Started
+[2026-09-12 22:19:26.539] [upf_app] [start] UPF initialization started
+[2026-09-12 22:19:26.540] [pfcp   ] [info] pfcp_l4_stack created listening to 192.168.14.151:8805
+[2026-09-12 22:19:26.540] [udp    ] [info] udp_server on port 8805: 1 receive thread(s) on one socket
+[2026-09-12 22:19:26.540] [udp    ] [info] udp_server on port 0: 1 receive thread(s) on one socket
+[2026-09-12 22:19:26.541] [upf_n4 ] [start] Starting...
+[2026-09-12 22:19:26.542] [upf_n4 ] [start] Started
+[2026-09-12 22:19:26.542] [upf_app] [info] GTP interface: ens20
+[2026-09-12 22:19:26.542] [upf_app] [info] Non-GTP interface: ens22
+[2026-09-12 22:19:26.542] [upf_app] [info] Setting up User Plane Component
+[2026-09-12 22:19:26.542] [upf_app] [info] UPF_XDPProgram initialized
+[2026-09-12 22:19:26.542] [upf_app] [info] PDU Session type: IP
+[2026-09-12 22:19:26.542] [upf_app] [info] 
+[2026-09-12 22:19:26.542] [upf_app] [info]  Interface attachment (XDP hook)
+[2026-09-12 22:19:26.542] [upf_app] [info]   ├─ N3EntryProgram:            created  (iface=ens20, dir=UL, XDP)
+[2026-09-12 22:19:26.542] [upf_app] [info]   └─ N6EntryProgram:            created  (iface=ens22, dir=DL, XDP)
+[2026-09-12 22:19:26.542] [upf_app] [info] 
+[2026-09-12 22:19:26.542] [upf_app] [info]  Tail-call pipeline (shared prog_array)
+[2026-09-12 22:19:26.542] [upf_app] [info]   ├─ SessionLookupIPProgram:    created  (session-lkp, XDP, slot=0)
+[2026-09-12 22:19:26.542] [upf_app] [info]   ├─ PdrMatchProgram:           created  (rule-match,  XDP, slot=2)
+[2026-09-12 22:19:26.542] [upf_app] [info]   ├─ FARProgram:                created  (rule-apply,  XDP, slot=3)
+[2026-09-12 22:19:26.542] [upf_app] [info]   └─ QERProgram:                created  (rule-apply,  XDP, slot=4)
+[2026-09-12 22:19:26.542] [upf_app] [info]       └─ QERTCProgram:          created  (qos-enforce, TC,  per-session)
+[2026-09-12 22:19:26.542] [upf_app] [info] 
+[2026-09-12 22:19:26.554] [upf_app] [info] [N6EntryProgram] XDP 'xdp_n6_entry' attached to ens22 (ifindex=6, mode=native (driver mode))
+[2026-09-12 22:19:26.564] [upf_app] [info] 
+[2026-09-12 22:19:26.564] [upf_app] [info]  Interface attachment (XDP hook)
+[2026-09-12 22:19:26.564] [upf_app] [info]   ├─ N3EntryProgram:              loaded ✓  (3 maps, iface=ens20)
+[2026-09-12 22:19:26.564] [upf_app] [info]   └─ N6EntryProgram:              loaded ✓  (3 maps, iface=ens22)
+[2026-09-12 22:19:26.564] [upf_app] [info] 
+[2026-09-12 22:19:26.564] [upf_app] [info]  Tail-call pipeline (shared prog_array)
+[2026-09-12 22:19:26.564] [upf_app] [info]   ├─ SessionLookupIPProgram:      loaded ✓  (5 maps)
+[2026-09-12 22:19:26.564] [upf_app] [info]   ├─ PdrMatchProgram:             loaded ✓  (5 maps)
+[2026-09-12 22:19:26.564] [upf_app] [info]   ├─ FARProgram:                  loaded ✓  (8 maps)
+[2026-09-12 22:19:26.564] [upf_app] [info]   └─ QERProgram:                  loaded ✓  (3 maps)
+[2026-09-12 22:19:26.564] [upf_app] [info]       └─ QERTCProgram:            loaded ✓  (TC-BPF, per-session)
+[2026-09-12 22:19:26.564] [upf_app] [info] 
+[2026-09-12 22:19:26.564] [upf_app] [info] UPF_XDPProgram: all programs loaded
+[2026-09-12 22:19:26.564] [upf_app] [info] UPF_XDPProgram: Maps initialization completed
+[2026-09-12 22:19:26.564] [upf_app] [info] UPF_XDPProgram: attaching IP PDU primary (n3_entry)
+[2026-09-12 22:19:26.571] [upf_app] [info] [N3EntryProgram] XDP 'xdp_n3_entry' attached to ens20 (ifindex=4, mode=native (driver mode))
+[2026-09-12 22:19:26.571] [upf_app] [info] redirect_interfaces_map populated: DOWNLINK[0]=ifindex(ens20)=4  UPLINK[1]=ifindex(ens22)=6
+[2026-09-12 22:19:26.571] [upf_app] [info] UPF_XDPProgram::Setup complete
+[2026-09-12 22:19:26.571] [upf_app] [info] Session Manager initialized
+[2026-09-12 22:19:26.571] [upf_app] [info] 
+[2026-09-12 22:19:26.571] [upf_app] [info]  Data Plane setup complete
+[2026-09-12 22:19:26.571] [upf_app] [info]   ├─ PDU Session Type  :  IP
+[2026-09-12 22:19:26.571] [upf_app] [info]   ├─ QoS Enforcement   :  ✓ on
+[2026-09-12 22:19:26.571] [upf_app] [info]   ├─ URR Reporting     :  ✗ off
+[2026-09-12 22:19:26.571] [upf_app] [info]   ├─ BAR Buffering     :  ✗ off
+[2026-09-12 22:19:26.571] [upf_app] [info]   ├─ MAR Steering      :  ✗ off
+[2026-09-12 22:19:26.571] [upf_app] [info]   └─ Pipeline slots    :  4
+[2026-09-12 22:19:26.571] [upf_app] [info] 
+[2026-09-12 22:19:26.571] [upf_app] [start] ┌─────────────────────────────────────────────────────────────────────────────┐
+[2026-09-12 22:19:26.571] [upf_app] [start] │                    Data-Path CONFIGURATION SUMMARY                          │
+[2026-09-12 22:19:26.571] [upf_app] [start] └─────────────────────────────────────────────────────────────────────────────┘
+[2026-09-12 22:19:26.571] [upf_app] [start] 
+[2026-09-12 22:19:26.571] [upf_app] [start] ┌─────────────────────────────────────────────────────────────────────────────┐
+[2026-09-12 22:19:26.571] [upf_app] [start] │                      NETWORK INTERFACE CONFIGURATION                        │
+[2026-09-12 22:19:26.571] [upf_app] [start] ├──────────────────┬──────────────────────┬───────────────────┬───────────────┤
+[2026-09-12 22:19:26.571] [upf_app] [start] │ 3GPP Ref Point   │ Interface            │ IP Address        │ ifindex       │
+[2026-09-12 22:19:26.571] [upf_app] [start] ├──────────────────┼──────────────────────┼───────────────────┼───────────────┤
+[2026-09-12 22:19:26.571] [upf_app] [start] │ N3 (GTP-U)       │ ens20                │ 192.168.13.151    │ 4             │
+[2026-09-12 22:19:26.571] [upf_app] [start] │ N4 (PFCP)        │ ens21                │ 192.168.14.151    │ 5             │
+[2026-09-12 22:19:26.571] [upf_app] [start] │ N6 (Data Network)│ ens22                │ 192.168.16.151    │ 6             │
+[2026-09-12 22:19:26.571] [upf_app] [start] └──────────────────┴──────────────────────┴───────────────────┴───────────────┘
+[2026-09-12 22:19:26.571] [upf_app] [start] 
+[2026-09-12 22:19:26.571] [upf_app] [start] ┌─────────────────────────────────────────────────────────────────────────────┐
+[2026-09-12 22:19:26.571] [upf_app] [start] │                         FEATURE CONFIGURATION                               │
+[2026-09-12 22:19:26.571] [upf_app] [start] ├──────────────────────────────────────┬──────────────────────────────────────┤
+[2026-09-12 22:19:26.571] [upf_app] [start] │ Feature                              │ Status                               │
+[2026-09-12 22:19:26.571] [upf_app] [start] ├──────────────────────────────────────┼──────────────────────────────────────┤
+[2026-09-12 22:19:26.571] [upf_app] [start] │ eBPF/XDP Data Plane                  │ ✓ Enabled                            │
+[2026-09-12 22:19:26.571] [upf_app] [start] │ QoS Enforcement (TC-BPF)             │ ✓ Enabled                            │
+[2026-09-12 22:19:26.571] [upf_app] [start] │ Framed Routing                       │ ✗ Disabled                           │
+[2026-09-12 22:19:26.571] [upf_app] [start] │ Usage Reporting (URR)                │ ✗ Disabled                           │
+[2026-09-12 22:19:26.571] [upf_app] [start] │ Packet Buffering (BAR)               │ ✗ Disabled                           │
+[2026-09-12 22:19:26.571] [upf_app] [start] │ Multi-Access Steering (MAR)          │ ✗ Disabled                           │
+[2026-09-12 22:19:26.571] [upf_app] [start] │ Ethernet PDU Sessions                │ ✗ Disabled                           │
+[2026-09-12 22:19:26.571] [upf_app] [start] └──────────────────────────────────────┴──────────────────────────────────────┘
+[2026-09-12 22:19:26.571] [upf_app] [start] 
+[2026-09-12 22:19:26.571] [upf_app] [start] ┌─────────────────────────────────────────────────────────────────────────────┐
+[2026-09-12 22:19:26.571] [upf_app] [start] │                       BPF MAP CAPACITY CONFIGURATION                        │
+[2026-09-12 22:19:26.571] [upf_app] [start] ├──────────────────────────────────────┬──────────────────────────────────────┤
+[2026-09-12 22:19:26.571] [upf_app] [start] │ Map Name                             │ Max Entries                          │
+[2026-09-12 22:19:26.571] [upf_app] [start] ├──────────────────────────────────────┼──────────────────────────────────────┤
+[2026-09-12 22:19:26.571] [upf_app] [start] │ session_by_ue_ip_map                 │ 100                                  │
+[2026-09-12 22:19:26.571] [upf_app] [start] │ session_rules_enabled_map            │ 100                                  │
+[2026-09-12 22:19:26.571] [upf_app] [start] │ pdrs_per_session_map                 │ 8                                    │
+[2026-09-12 22:19:26.571] [upf_app] [start] │ rules_match_pdr_map                  │ 800                                  │
+[2026-09-12 22:19:26.571] [upf_app] [start] │ sdf_filters_map                      │ 800                                  │
+[2026-09-12 22:19:26.571] [upf_app] [start] │ upf_interface_map                    │ 4                                    │
+[2026-09-12 22:19:26.571] [upf_app] [start] │ redirect_interfaces_map              │ 2                                    │
+[2026-09-12 22:19:26.571] [upf_app] [start] │ arp_table_map                        │ 256                                  │
+[2026-09-12 22:19:26.571] [upf_app] [start] │ egress_ifindex                       │ 4                                    │
+[2026-09-12 22:19:26.571] [upf_app] [start] └──────────────────────────────────────┴──────────────────────────────────────┘
+[2026-09-12 22:19:26.571] [upf_app] [start] 
+[2026-09-12 22:19:26.571] [upf_app] [start] ┌──────────────────────────────────────┬────────────┬────────────┬────────────┐
+[2026-09-12 22:19:26.571] [upf_app] [start] │ Program                              │ Dispatch   │ Slot       │ Status     │
+[2026-09-12 22:19:26.571] [upf_app] [start] ├──────────────────────────────────────┴────────────┴────────────┴────────────┤
+[2026-09-12 22:19:26.571] [upf_app] [start] │        PDU Session : IP            N3 = ens20            N6 = ens22         │
+[2026-09-12 22:19:26.571] [upf_app] [start] ├──────────────────────────────────────┬────────────┬────────────┬────────────┤
+[2026-09-12 22:19:26.571] [upf_app] [start] │ N3EntryProgram                       │ XDP hook   │ -          │ ✓ loaded   │
+[2026-09-12 22:19:26.571] [upf_app] [start] │ N6EntryProgram                       │ XDP hook   │ -          │ ✓ loaded   │
+[2026-09-12 22:19:26.571] [upf_app] [start] ├─────────────────────────────────────────────────────────────────────────────┤
+[2026-09-12 22:19:26.571] [upf_app] [start] │        Tail-call pipeline  (shared prog_array, XDP driver context)          │
+[2026-09-12 22:19:26.571] [upf_app] [start] ├──────────────────────────────────────┬────────────┬────────────┬────────────┤
+[2026-09-12 22:19:26.572] [upf_app] [start] │ SessionLookupIPProgram               │ tail-call  │ 0          │ ✓ loaded   │
+[2026-09-12 22:19:26.572] [upf_app] [start] │ PdrMatchProgram                      │ tail-call  │ 2          │ ✓ loaded   │
+[2026-09-12 22:19:26.572] [upf_app] [start] │ FARProgram                           │ tail-call  │ 3          │ ✓ loaded   │
+[2026-09-12 22:19:26.572] [upf_app] [start] │ QERProgram                           │ tail-call  │ 4          │ ✓ loaded   │
+[2026-09-12 22:19:26.572] [upf_app] [start] │ QERTCProgram                         │ TC hook    │ TC         │ ✓ loaded   │
+[2026-09-12 22:19:26.572] [upf_app] [start] │ URRProgram                           │ tail-call  │ 5          │ — skipped  │
+[2026-09-12 22:19:26.572] [upf_app] [start] │ BARProgram                           │ tail-call  │ 6          │ — skipped  │
+[2026-09-12 22:19:26.572] [upf_app] [start] │ MARProgram                           │ tail-call  │ 7          │ — skipped  │
+[2026-09-12 22:19:26.572] [upf_app] [start] └──────────────────────────────────────┴────────────┴────────────┴────────────┘
+[2026-09-12 22:19:26.572] [upf_app] [start] 
+[2026-09-12 22:19:26.572] [upf_app] [start] ┌───────────────────────────┬────┬────┬────┬────┬────┬────┬────┐
+[2026-09-12 22:19:26.572] [upf_app] [start] │ BPF Map                   │ N3 │ N6 │SLk │PDR │FAR │QER │QTC │
+[2026-09-12 22:19:26.572] [upf_app] [start] ├───────────────────────────┴────┴────┴────┴────┴────┴────┴────┤
+[2026-09-12 22:19:26.572] [upf_app] [start] │  shared infrastructure                                       │
+[2026-09-12 22:19:26.572] [upf_app] [start] ├───────────────────────────┬────┬────┬────┬────┬────┬────┬────┤
+[2026-09-12 22:19:26.572] [upf_app] [start] │ tail_call_progs_map       │ ✓  │ ✓  │ ✓  │    │    │    │    │
+[2026-09-12 22:19:26.572] [upf_app] [start] │ packet_context_map        │ ✓  │ ✓  │ ✓  │ ✓  │ ✓  │ ✓  │    │
+[2026-09-12 22:19:26.572] [upf_app] [start] │ mc_stats_map              │ ✓  │ ✓  │ ✓  │ ✓  │ ✓  │ ✓  │    │
+[2026-09-12 22:19:26.572] [upf_app] [start] ├───────────────────────────┴────┴────┴────┴────┴────┴────┴────┤
+[2026-09-12 22:19:26.572] [upf_app] [start] │  session / pipeline                                          │
+[2026-09-12 22:19:26.572] [upf_app] [start] ├───────────────────────────┬────┬────┬────┬────┬────┬────┬────┤
+[2026-09-12 22:19:26.572] [upf_app] [start] │ session_by_ue_ip_map      │    │    │ ✓  │    │    │    │    │
+[2026-09-12 22:19:26.572] [upf_app] [start] │ session_rules_enabled_map │    │    │ ✓  │    │    │    │    │
+[2026-09-12 22:19:26.572] [upf_app] [start] │ pdrs_per_session_map      │    │    │    │ ✓  │    │    │    │
+[2026-09-12 22:19:26.572] [upf_app] [start] │ sdf_filters_map           │    │    │    │ ✓  │    │    │    │
+[2026-09-12 22:19:26.572] [upf_app] [start] │ rules_match_pdr_map       │    │    │    │    │ ✓  │ ✓  │    │
+[2026-09-12 22:19:26.572] [upf_app] [start] ├───────────────────────────┴────┴────┴────┴────┴────┴────┴────┤
+[2026-09-12 22:19:26.572] [upf_app] [start] │  interface / ARP                                             │
+[2026-09-12 22:19:26.572] [upf_app] [start] ├───────────────────────────┬────┬────┬────┬────┬────┬────┬────┤
+[2026-09-12 22:19:26.572] [upf_app] [start] │ upf_interface_map         │    │    │    │    │ ✓  │    │    │
+[2026-09-12 22:19:26.572] [upf_app] [start] │ redirect_interfaces_map   │    │    │    │    │ ✓  │    │    │
+[2026-09-12 22:19:26.572] [upf_app] [start] │ arp_table_map             │    │    │    │    │ ✓  │    │    │
+[2026-09-12 22:19:26.572] [upf_app] [start] │ egress_ifindex            │    │    │    │    │    │    │ ✓  │
+[2026-09-12 22:19:26.572] [upf_app] [start] └───────────────────────────┴────┴────┴────┴────┴────┴────┴────┘
+[2026-09-12 22:19:26.572] [upf_app] [start] 
+[2026-09-12 22:19:26.572] [upf_app] [start] 
+[2026-09-12 22:19:26.572] [upf_app] [start]                                    OnNewPacket ●
+[2026-09-12 22:19:26.572] [upf_app] [start]                                          │
+[2026-09-12 22:19:26.572] [upf_app] [start]                                          ▼
+[2026-09-12 22:19:26.572] [upf_app] [start]   ┌─────────────────────────────────────────────────────────────────────────────┐
+[2026-09-12 22:19:26.572] [upf_app] [start]   │ N3EntryProgram  (GTP-U → DN)                             [entry-point  XDP] │
+[2026-09-12 22:19:26.572] [upf_app] [start]   │ N6EntryProgram  (DN → GTP-U)                             [entry-point  XDP] │
+[2026-09-12 22:19:26.572] [upf_app] [start]   ├─────────────────────────────────────────────────────────────────────────────┤
+[2026-09-12 22:19:26.572] [upf_app] [start]   │  Parse direction (GTP-U / UDP)                                              │
+[2026-09-12 22:19:26.572] [upf_app] [start]   │  Session lookup (TEID / UE-IP)  ◄──── [session_by_ue_ip_map]                │
+[2026-09-12 22:19:26.572] [upf_app] [start]   └─────────────────────────────────────────────────────────────────────────────┘
+[2026-09-12 22:19:26.572] [upf_app] [start]                                          │
+[2026-09-12 22:19:26.572] [upf_app] [start]                   ┌──────────────────────┘
+[2026-09-12 22:19:26.572] [upf_app] [start]                   ▼
+[2026-09-12 22:19:26.572] [upf_app] [start]   ┌──────────────────────────────┐               ┌──────────────────────────────┐
+[2026-09-12 22:19:26.572] [upf_app] [start]   │ SessionLookupIPProgram       │               │ PdrMatchProgram              │
+[2026-09-12 22:19:26.572] [upf_app] [start]   │  [session-lkp  XDP]          │               │  [rule-match   XDP]          │
+[2026-09-12 22:19:26.572] [upf_app] [start]   ├──────────────────────────────┤─ tail-call ──►├──────────────────────────────┤
+[2026-09-12 22:19:26.572] [upf_app] [start]   │  Get SEID + PDR list         │               │  Match PDR (TEID/UE-IP/SDF)  │
+[2026-09-12 22:19:26.572] [upf_app] [start]   │  Get rules enabled flags     │               │  Get matched 3GPP rules      │
+[2026-09-12 22:19:26.572] [upf_app] [start]   └──────────────────────────────┘               └──────────────────────────────┘
+[2026-09-12 22:19:26.572] [upf_app] [start]                                                                  │
+[2026-09-12 22:19:26.572] [upf_app] [start]                                          ┌───────────────────────┘
+[2026-09-12 22:19:26.572] [upf_app] [start]                                          ▼
+[2026-09-12 22:19:26.572] [upf_app] [start]   ┌─────────────────────────────────────────────────────────────────────────────┐
+[2026-09-12 22:19:26.572] [upf_app] [start]   │ FARProgram                                               [rule-apply   XDP] │
+[2026-09-12 22:19:26.572] [upf_app] [start]   ├─────────────────────────────────────────────────────────────────────────────┤
+[2026-09-12 22:19:26.572] [upf_app] [start]   │  FAR action (FORW / BUFF / DROP)                                            │
+[2026-09-12 22:19:26.572] [upf_app] [start]   │  GTP-U outer header creation    ◄──── [upf_interface_map]                   │
+[2026-09-12 22:19:26.572] [upf_app] [start]   │  L2 rewrite (ARP resolution)    ◄──── [arp_table_map]                       │
+[2026-09-12 22:19:26.572] [upf_app] [start]   │  Redirect to N3/N6              ◄──── [redirect_interfaces_map]             │
+[2026-09-12 22:19:26.572] [upf_app] [start]   └─────────────────────────────────────────────────────────────────────────────┘
+[2026-09-12 22:19:26.572] [upf_app] [start]   [QER enabled]                          │
+[2026-09-12 22:19:26.572] [upf_app] [start]                   ┌──────────────────────┘
+[2026-09-12 22:19:26.572] [upf_app] [start]                   ▼
+[2026-09-12 22:19:26.572] [upf_app] [start]   ┌──────────────────────────────┐
+[2026-09-12 22:19:26.572] [upf_app] [start]   │ QERProgram                   │
+[2026-09-12 22:19:26.572] [upf_app] [start]   │  [rule-apply   XDP]          │
+[2026-09-12 22:19:26.572] [upf_app] [start]   ├──────────────────────────────┤
+[2026-09-12 22:19:26.572] [upf_app] [start]   │  Gate check (UL/DL open)     │
+[2026-09-12 22:19:26.572] [upf_app] [start]   │  QFI flow classification     │
+[2026-09-12 22:19:26.572] [upf_app] [start]   └──────────────────────────────┘
+[2026-09-12 22:19:26.572] [upf_app] [start]               [QER-TC: TC egress, downlink only] │
+[2026-09-12 22:19:26.572] [upf_app] [start]                   └──────────────────────┐
+[2026-09-12 22:19:26.572] [upf_app] [start]                                          ▼
+[2026-09-12 22:19:26.572] [upf_app] [start]   ┌─────────────────────────────────────────────────────────────────────────────┐
+[2026-09-12 22:19:26.572] [upf_app] [start]   │ QERTCProgram                                             [qos-enforce   TC] │
+[2026-09-12 22:19:26.572] [upf_app] [start]   ├─────────────────────────────────────────────────────────────────────────────┤
+[2026-09-12 22:19:26.572] [upf_app] [start]   │  HTB: per-session MBR/GBR per QFI                                           │
+[2026-09-12 22:19:26.572] [upf_app] [start]   │  TC classifier redirect         ◄──── [egress_ifindex_map]                  │
+[2026-09-12 22:19:26.572] [upf_app] [start]   │  ● XDP_REDIRECT → N3 (GTP-U encap) → gNB                                    │
+[2026-09-12 22:19:26.572] [upf_app] [start]   └─────────────────────────────────────────────────────────────────────────────┘
+[2026-09-12 22:19:26.572] [upf_app] [start] 
+[2026-09-12 22:19:26.572] [upf_app] [start] ┌─────────────────────────────────────────────────────────────────────────────┐
+[2026-09-12 22:19:26.572] [upf_app] [start] │                    eBPF/XDP RUNTIME CONFIGURATION                           │
+[2026-09-12 22:19:26.572] [upf_app] [start] ├──────────────────────────────────────┬──────────────────────────────────────┤
+[2026-09-12 22:19:26.572] [upf_app] [start] │ Component                            │ Status                               │
+[2026-09-12 22:19:26.572] [upf_app] [start] ├──────────────────────────────────────┼──────────────────────────────────────┤
+[2026-09-12 22:19:26.572] [upf_app] [start] │ N3 XDP Mode                          │ Native (Hardware)                    │
+[2026-09-12 22:19:26.572] [upf_app] [start] │ N6 XDP Mode                          │ Native (Hardware)                    │
+[2026-09-12 22:19:26.572] [upf_app] [start] │ QoS Enforcement (TC-BPF)             │ ✓ Enabled                            │
+[2026-09-12 22:19:26.572] [upf_app] [start] │ Total BPF Maps Loaded                │ 72                                   │
+[2026-09-12 22:19:26.572] [upf_app] [start] ├──────────────────────────────────────┼──────────────────────────────────────┤
+[2026-09-12 22:19:26.572] [upf_app] [start] │ Expected Throughput                  │ ~10+ Gbps (Native XDP)               │
+[2026-09-12 22:19:26.572] [upf_app] [start] │ Hardware Acceleration                │ ✓ Enabled (Native XDP)               │
+[2026-09-12 22:19:26.572] [upf_app] [start] └──────────────────────────────────────┴──────────────────────────────────────┘
+[2026-09-12 22:19:26.572] [upf_app] [start] 
+[2026-09-12 22:19:31.572] [upf_app] [start] ==============================================================================
+[2026-09-12 22:19:31.572] [upf_app] [start]                    UPF DATA-PATH INITIALIZATION COMPLETE - READY
+[2026-09-12 22:19:31.572] [upf_app] [start]          Waiting for PFCP Session Establishment requests on N4...
+[2026-09-12 22:19:31.572] [upf_app] [start] ==============================================================================
+[2026-09-12 22:19:31.572] [upf_app] [start] 
 ```
 The link status of the network interfaces N3(ens20) and N6(ens22) is as follows.
 ```
@@ -797,12 +802,12 @@ The link status of the network interfaces N3(ens20) and N6(ens22) is as follows.
 ...
 4: ens20: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 xdp qdisc fq_codel state UP mode DEFAULT group default qlen 1000
     link/ether bc:24:11:df:d0:80 brd ff:ff:ff:ff:ff:ff
-    prog/xdp id 29 name xdp_n3_entry tag fc5647cb5262a9bb jited 
+    prog/xdp id 75 name xdp_n3_entry tag fc5647cb5262a9bb jited 
     altname enp0s20
 ...
 6: ens22: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 xdp qdisc fq_codel state UP mode DEFAULT group default qlen 1000
     link/ether bc:24:11:5b:87:d0 brd ff:ff:ff:ff:ff:ff
-    prog/xdp id 36 name xdp_n6_entry tag a423aca1a22df04c jited 
+    prog/xdp id 82 name xdp_n6_entry tag a423aca1a22df04c jited 
     altname enp0s22
 ...
 ```
@@ -853,6 +858,10 @@ I would like to thank the excellent developers and all the contributors of OAI-C
 
 ## Changelog (summary)
 
+- [2026.09.12] Updated as follows.
+  - Updated OAI-CN5G-UPF and OAI-CN5G-COMMON-BUILD.
+  - Added [Fix same UDP port for both PFCP request and response](https://github.com/s5uishida/install_oai_upf/blob/main/patches/fix_same_port_for_pfcp_req_res.patch) patch.
+  - Deleted `Fix some build errors` patch.
 - [2026.09.12] Updated as follows.
   - Updated OAI-CN5G-UPF and OAI-CN5G-COMMON-SRC.
   - Updated to use [u24-support-develop](https://github.com/openairinterface/oai-cn5g-common-src/tree/u24-support-develop) branch of OAI-CN5G-COMMON-SRC, as a patch almost identical to [Fixing issues when building with U24.04](https://github.com/openairinterface/oai-cn5g-common-src/commit/79f2d37025df06b6a974c5301aa6affc81014a61) has been merged into it.
