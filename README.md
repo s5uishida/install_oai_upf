@@ -38,7 +38,7 @@ This briefly describes the steps and configuration to build and install [OAI-CN5
 - [Setup OAI-CN5G-UPF on VM-UP](#setup_up)
   - [Create configuration file](#conf)
     - [Enable Framed Routing in eBPF/XDP or Simple Switch mode](#fr)
-    - [Changes in the configuration file for Simple Switch mode](#ss_conf)
+    - [Change to Simple Switch mode](#ss_conf)
     - [Prevent performance degradation in Simple Switch mode](#performance)
     - [Network settings in Simple Switch mode](#network_settings)
 - [Run OAI-CN5G-UPF on VM-UP](#run)
@@ -413,7 +413,7 @@ To enable Framed Routing in eBPF/XDP or Simple Switch mode, change the configura
 
 <a id="ss_conf"></a>
 
-#### Changes in the configuration file for Simple Switch mode
+#### Change to Simple Switch mode
 
 When running UPF in Simple Switch mode instead of eBPF/XDP mode, change the configuration file as follows.
 ```diff
