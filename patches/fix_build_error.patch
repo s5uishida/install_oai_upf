@@ -1,0 +1,173 @@
+diff -urN oai-cn5g-upf.orig/build/common-build/installation/build_helper.fb_folly oai-cn5g-upf/build/common-build/installation/build_helper.fb_folly
+--- oai-cn5g-upf.orig/build/common-build/installation/build_helper.fb_folly	1970-01-01 09:00:00.000000000 +0900
++++ oai-cn5g-upf/build/common-build/installation/build_helper.fb_folly	2026-09-19 17:49:32.014058853 +0900
+@@ -0,0 +1,145 @@
++# SPDX-License-Identifier: LicenseRef-CSSL-1.0
++
++#-------------------------------------------------------------------------------
++#arg1 is force (0 or 1) (no interactive script)
++#arg2 is debug (0 or 1) (install debug libraries)
++install_fb_folly_from_source(){
++  echo "Starting to install folly"
++  if [ $1 -eq 0 ]; then
++    OPTION=""
++    read -p "Do you want to install FaceBook folly (github)? <y/N> " prompt
++  else
++    prompt='y'
++    OPTION="-y"
++  fi
++  if [ $2 -eq 0 ]; then
++    debug=0
++  else
++    debug=1
++  fi
++
++
++  if [[ $prompt =~ [yY](es)* ]]
++  then
++
++    if [[ "$OS_BASEDISTRO" == "fedora" ]]; then
++      $SUDO $INSTALLER install $OPTION \
++        make \
++        boost-devel \
++        libevent-devel \
++        double-conversion-devel \
++        glog-devel \
++        gflags-devel \
++        lz4-devel \
++        zlib-devel\
++        openssl-devel \
++        binutils-devel
++      ret=$?;[[ $ret -ne 0 ]] && return $ret
++    elif [[ $OS_DISTRO == "ubuntu" ]]; then
++      # We need Boost 1.66 or later
++      # Boost-Installation should have been taken care before.
++      $SUDO $INSTALLER install $OPTION \
++        cmake \
++        libevent-dev \
++        libdouble-conversion-dev \
++        libgoogle-glog-dev \
++        libgflags-dev \
++        libiberty-dev \
++        liblz4-dev \
++        liblzma-dev \
++        libsnappy-dev \
++        libboost-all-dev \
++        libfmt-dev \
++        libzstd-dev \
++        make \
++        zlib1g-dev \
++        binutils-dev \
++        libjemalloc-dev \
++        libssl-dev \
++        pkg-config
++      ret=$?;[[ $ret -ne 0 ]] && return $ret
++
++      # folly (>= v2024.x) requires the header-only fast_float library. The
++      # version packaged by the supported distros is too old (Ubuntu 24.04
++      # ships 3.9.0, folly needs the 8.0.0 API), so install it from source to
++      # match the version folly pins in its fbcode_builder manifest.
++      $SUDO rm -rf /tmp/fast_float
++      git clone --depth 1 --branch v8.0.0 https://github.com/fastfloat/fast_float.git /tmp/fast_float
++      ret=$?;[[ $ret -ne 0 ]] && return $ret
++      pushd /tmp/fast_float
++      mkdir -p _build && cd _build
++      cmake -DCMAKE_INSTALL_PREFIX=/usr/local -DFASTFLOAT_TEST=OFF ..
++      ret=$?;[[ $ret -ne 0 ]] && popd && return $ret
++      $SUDO make install
++      ret=$?;[[ $ret -ne 0 ]] && popd && return $ret
++      popd
++      $SUDO rm -rf /tmp/fast_float
++    fi
++
++    pushd /tmp
++
++    if [ $debug -eq 1 ]; then
++      # For advanced debugging options
++      $SUDO $INSTALLER install $OPTION \
++        libunwind8-dev \
++        libelf-dev \
++        libdwarf-dev
++      ret=$?;[[ $ret -ne 0 ]] && return $ret
++
++      wget --quiet --tries=3 --retry-connrefused https://github.com/google/googletest/archive/release-1.8.0.tar.gz && \
++      tar zxf release-1.8.0.tar.gz && \
++      rm -f release-1.8.0.tar.gz && \
++      cd googletest-release-1.8.0 && \
++      cmake . && \
++      make && \
++      $SUDO make install
++      ret=$?;[[ $ret -ne 0 ]] && popd && return $ret
++      cd ..
++    fi
++
++
++    $SUDO rm -rf /tmp/folly
++    git clone https://github.com/facebook/folly.git
++    ret=$?;[[ $ret -ne 0 ]] && popd && return $ret
++    cd folly
++    if [[ "$OS_BASEDISTRO" == "fedora" ]]; then
++      git checkout -f v2019.06.17.00
++      echo 'diff --git a/build/fbcode_builder/CMake/FindGflags.cmake b/build/fbcode_builder/CMake/FindGflags.cmake' > patch.diff
++      echo 'index 246ceac..3b96716 100644' >> patch.diff
++      echo '--- a/build/fbcode_builder/CMake/FindGflags.cmake' >> patch.diff
++      echo '+++ b/build/fbcode_builder/CMake/FindGflags.cmake' >> patch.diff
++      echo '@@ -34,6 +34,9 @@ IF (LIBGFLAGS_INCLUDE_DIR)' >> patch.diff
++      echo ' ENDIF ()' >> patch.diff
++      echo '' >> patch.diff
++      echo ' find_package(gflags CONFIG QUIET)' >> patch.diff
++      echo '+get_filename_component (_LIB_PATH "${gflags_CONFIG}/../../../" ABSOLUTE)' >> patch.diff
++      echo '+unset(gflags_LIBRARIES)' >> patch.diff
++      echo '+find_library(gflags_LIBRARIES gflags PATHS ${_LIB_PATH})' >> patch.diff
++      echo ' if (gflags_FOUND)' >> patch.diff
++      echo '   if (NOT Gflags_FIND_QUIETLY)' >> patch.diff
++      echo '     message(STATUS "Found gflags from package config ${gflags_CONFIG}")' >> patch.diff
++      git apply patch.diff
++      sed -i -e "s@#include <algorithm>@#include <algorithm>\n#include <limits>@" folly/TimeoutQueue.cpp
++      sed -i -e "s@folly::constexpr_max@@" -e "s@SIGSTKSZ, @@" ./folly/fibers/FiberManager.cpp
++      sed -i -e "s@#include <folly/synchronization/SanitizeThread.h>@#include <folly/synchronization/SanitizeThread.h>\n#include <system_error>@" folly/detail/AtFork.cpp
++    else
++        git checkout -f v2026.01.19.00
++    fi
++
++    mkdir _build && cd _build
++    if [[ "$OS_BASEDISTRO" == "fedora" ]]; then
++      cmake3  ..
++    else
++      cmake  ..
++    fi
++    ret=$?;[[ $ret -ne 0 ]] && popd && return $ret
++    make -j $(nproc)
++    ret=$?;[[ $ret -ne 0 ]] && popd && return $ret
++    $SUDO make install
++    ret=$?;[[ $ret -ne 0 ]] && popd && return $ret
++    popd
++    rm -Rf /tmp/folly/_build
++  fi
++  echo "folly installation complete"
++  return 0
++}
+diff -urN oai-cn5g-upf.orig/src/oai_upf/CMakeLists.txt oai-cn5g-upf/src/oai_upf/CMakeLists.txt
+--- oai-cn5g-upf.orig/src/oai_upf/CMakeLists.txt	2026-09-19 17:41:13.000000000 +0900
++++ oai-cn5g-upf/src/oai_upf/CMakeLists.txt	2026-09-19 17:48:52.196750820 +0900
+@@ -5,6 +5,10 @@
+ 
+ project (OpenAirInterface)
+ 
++find_package(Boost REQUIRED COMPONENTS filesystem system)
++find_library(IBERTY_LIBRARY NAMES iberty)
++find_library(FOLLY_LIBRARY NAMES folly)
++
+ ###########################################
+ # macros to define options as there is numerous options in oai
+ ################################################
+@@ -348,6 +352,9 @@
+   gflags glog dl double-conversion folly fmt spdlog -Wl,--end-group
+   pthread m rt config++
+   event boost_system curl yaml-cpp cpr::cpr
++  Boost::filesystem Boost::system
++  ${IBERTY_LIBRARY}
++  ${FOLLY_LIBRARY}
+ )
+ 
+ 

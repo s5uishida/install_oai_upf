@@ -1,0 +1,823 @@
+diff --git a/src/oai_upf/CMakeLists.txt b/src/oai_upf/CMakeLists.txt
+index 470c854..13e0981 100644
+--- a/src/oai_upf/CMakeLists.txt
++++ b/src/oai_upf/CMakeLists.txt
+@@ -290,7 +290,6 @@ include_directories(${SRC_TOP_DIR}/upf_app/kernel/include)
+ include_directories(${SRC_TOP_DIR}/upf_app/app)
+ include_directories(${SRC_TOP_DIR}/upf_app/utils)
+ include_directories(${SRC_TOP_DIR}/upf_app/simpleswitch)
+-include_directories(${SRC_TOP_DIR}/upf_app/framed_routing)
+ include_directories(${SRC_TOP_DIR}/${MOUNTED_COMMON}/3gpp)
+ include_directories(${SRC_TOP_DIR}/${MOUNTED_COMMON}/common)
+ include_directories(${SRC_TOP_DIR}/${MOUNTED_COMMON}/model)
+diff --git a/src/upf_app/CMakeLists.txt b/src/upf_app/CMakeLists.txt
+index d87fbfd..de52212 100644
+--- a/src/upf_app/CMakeLists.txt
++++ b/src/upf_app/CMakeLists.txt
+@@ -41,7 +41,6 @@ include_directories(${SRC_TOP_DIR}/upf_app/control)
+ include_directories(${SRC_TOP_DIR}/upf_app/helpers)        # CmdRunner, SdfFilterParser, GetNicInformation, NextHopFinder
+ include_directories(${SRC_TOP_DIR}/upf_app/simpleswitch)
+ include_directories(${SRC_TOP_DIR}/upf_app/user)           # BPFProgram, *_xdp_user, qer_tc_user, pdr_match_user
+-include_directories(${SRC_TOP_DIR}/upf_app/framed_routing) # framed_routing_bpf.h, FramedRouting.hpp
+ 
+ # libbpf headers (bpf/*.h), installed by build_helper.upf (make install_headers)
+ include_directories(${SRC_TOP_DIR}/../build/ext/libbpf/root/usr/include)
+diff --git a/src/upf_app/control/SessionProgramManager.cpp b/src/upf_app/control/SessionProgramManager.cpp
+index 9b5d137..b1a7fb8 100644
+--- a/src/upf_app/control/SessionProgramManager.cpp
++++ b/src/upf_app/control/SessionProgramManager.cpp
+@@ -30,6 +30,7 @@
+ #include "pfcp_urr.hpp"
+ #include "pfcp_bar.hpp"
+ #include "pfcp_mar.hpp"
++#include "FramedRouting.hpp"  // fr::FramedRouting::toBpfKeys (framed routing)
+ #include <pfcp_pdr.h>  // BPF PDR structure
+ #include <pfcp_far.h>  // BPF FAR structure
+ #include <pfcp_qer.h>  // BPF QER structure
+@@ -152,6 +153,13 @@ void SessionProgramManager::RemoveSession(uint64_t seid) {
+     if (bar_st_map) bar_st_map->Remove(seid);
+     auto mar_map = upf_xdp_program->GetMapByName("mar_rules_map");
+     if (mar_map) mar_map->Remove(seid);
++
++    // Clean up Framed-Route (RFC 2865) entries installed for this session
++    auto fr_it = session_framed_keys_.find(seid);
++    if (fr_it != session_framed_keys_.end()) {
++      for (auto& key : fr_it->second) upf_xdp_program->RemoveFramedRoute(key);
++      session_framed_keys_.erase(fr_it);
++    }
+   }
+ 
+   // Clean up ARP caches
+@@ -315,6 +323,39 @@ void SessionProgramManager::StorePduSessionInMap(
+   }
+ }
+ 
++//------------------------------------------------------------------------------
++void SessionProgramManager::InstallFramedRoutes(
++    std::shared_ptr<UPF_XDPProgram> upf_xdp_program, uint64_t seid,
++    uint32_t ue_ip_s_addr, const std::shared_ptr<pfcp::pfcp_pdr>& pdr) {
++  if (!upf_xdp_program || !pdr) return;
++
++  pfcp::pdi pdi;
++  if (!pdr->get(pdi)) return;
++
++  std::vector<pfcp::framed_route_t> routes;
++  if (!pdi.get(routes) || routes.empty()) return;
++
++  // A framed route resolves to the owning UE's session via session_by_ue_ip;
++  // without a UE IP there is nothing to map it to (TS 29.244 §5.16 NOTE 3).
++  if (ue_ip_s_addr == 0) return;
++
++  // Host-order numeric UE IP: the same normalization StorePduSessionInMap
++  // applies to the session_by_ue_ip_map key, and the byte order the XDP
++  // fallback (pctx->ue_ip = bpf_ntohl(daddr)) expects.
++  const uint32_t ue_ip =
++      likely(IsLittleEndian()) ? htonl(ue_ip_s_addr) : ue_ip_s_addr;
++
++  for (const auto& route : routes) {
++    for (const auto& key : fr::FramedRouting::toBpfKeys(route)) {
++      upf_xdp_program->UpdateFramedRouteMappingMap(ue_ip, key);
++      session_framed_keys_[seid].push_back(key);
++      Logger::upf_app().debug(
++          "[eBPF] Framed route '%s' -> UE 0x%x installed (SEID " SEID_FMT ")",
++          route.framed_route, ue_ip, seid);
++    }
++  }
++}
++
+ //------------------------------------------------------------------------------
+ /**
+  * @brief Store ETH PDU session information in BPF map
+@@ -685,6 +726,15 @@ void SessionProgramManager::CreatePipeline(
+         StorePduSessionInMap(
+             upf_xdp_program, ue_ip_address.ipv4_address.s_addr, fteid.teid, 0,
+             seid);
++
++        // Framed routing (RFC 2865): downlink (CORE) PDRs may carry
++        // Framed-Routes for subnets behind the UE — map them to this UE IP so
++        // the XDP session-lookup fallback can resolve traffic addressed there.
++        if (upf::IsFramedRoutingEnabled() &&
++            source_interface.interface_value == INTERFACE_VALUE_CORE) {
++          InstallFramedRoutes(
++              upf_xdp_program, seid, ue_ip_address.ipv4_address.s_addr, pdr);
++        }
+       }
+ 
+       // Retrieve associated FAR
+diff --git a/src/upf_app/control/SessionProgramManager.h b/src/upf_app/control/SessionProgramManager.h
+index 2acfb6c..b6da708 100644
+--- a/src/upf_app/control/SessionProgramManager.h
++++ b/src/upf_app/control/SessionProgramManager.h
+@@ -13,6 +13,8 @@
+ #include <vector>
+ #include <set>
+ 
++#include "framed_routing_bpf.h"  // FramedRoutingKeyBPF
++
+ // Forward declarations
+ namespace pfcp {
+ class pfcp_session;
+@@ -152,6 +154,19 @@ class SessionProgramManager {
+       std::shared_ptr<UPF_XDPProgram> xdp_program, uint32_t ue_ip,
+       uint32_t teid_dl, uint32_t teid_ul, uint64_t seid);
+ 
++  /**
++   * @brief Install a downlink PDR's Framed-Routes into the BPF datapath.
++   *
++   * Maps each framed prefix carried by the PDR's PDI to the owning UE IP in
++   * m_framed_route_mapping, so the XDP session-lookup fallback can resolve
++   * downlink traffic addressed *behind* the UE. Records the installed keys
++   * under `seid` for teardown in RemoveSession(). No-op when the PDR carries
++   * no Framed-Route. (RFC 2865 Framed-Route / TS 29.061.)
++   */
++  void InstallFramedRoutes(
++      std::shared_ptr<UPF_XDPProgram> xdp_program, uint64_t seid,
++      uint32_t ue_ip_s_addr, const std::shared_ptr<pfcp::pfcp_pdr>& pdr);
++
+   /**
+    * @brief Store ETH PDU session information in BPF map
+    *
+@@ -750,6 +765,8 @@ class SessionProgramManager {
+   std::map<uint64_t, std::set<uint32_t>> session_n3_arp_cache_;
+   /// Track PDU session type per SEID for cleanup and map routing
+   std::map<uint64_t, PduSessionType> session_pdu_type_map_;
++  /// Framed-Route (RFC 2865) BPF keys installed per SEID, for teardown.
++  std::map<uint64_t, std::vector<FramedRoutingKeyBPF>> session_framed_keys_;
+ };
+ 
+ #endif  // SESSION_PROGRAM_MANAGER_H_
+diff --git a/src/upf_app/control/UserPlaneComponent.cpp b/src/upf_app/control/UserPlaneComponent.cpp
+index 87113d2..5bfd2ec 100644
+--- a/src/upf_app/control/UserPlaneComponent.cpp
++++ b/src/upf_app/control/UserPlaneComponent.cpp
+@@ -66,7 +66,11 @@ PipelineFeatureFlags UserPlaneComponent::BuildFeatureFlags() const {
+   // Multi-Access Rules (ATSSS steering)
+   flags.enable_mar = bpf && upf::IsMarEnabled();
+ 
+-  // Framed Routing support
++  // Framed Routing support (RFC 2865 Framed-Route / TS 29.061).
++  // Control-plane feature — no dedicated XDP program. In the BPF datapath it
++  // drives the framed_routing_flag + m_framed_route_mapping fallback inside the
++  // existing session-lookup program; in the simpleswitch datapath it installs
++  // host routes + SNAT. Honored in BOTH datapaths, so it is NOT gated on `bpf`.
+   flags.enable_framed_routing = bpf && upf::IsFramedRoutingEnabled();
+ 
+   // PDU session type: select IP or ETH entry programs
+@@ -189,6 +193,9 @@ void UserPlaneComponent::Setup(
+       "  ├─ BAR Buffering     :  %s", flags.enable_bar ? "✓ on" : "✗ off");
+   Logger::upf_app().info(
+       "  ├─ MAR Steering      :  %s", flags.enable_mar ? "✓ on" : "✗ off");
++  Logger::upf_app().info(
++      "  ├─ Framed Routing    :  %s",
++      flags.enable_framed_routing ? "✓ on" : "✗ off");
+   Logger::upf_app().info("  └─ Pipeline slots    :  %d", feature_count);
+   Logger::upf_app().info("");
+ 
+diff --git a/src/upf_app/kernel/include/framed_routing_bpf.h b/src/upf_app/kernel/include/framed_routing_bpf.h
+index 4089ad3..4aad63c 100644
+--- a/src/upf_app/kernel/include/framed_routing_bpf.h
++++ b/src/upf_app/kernel/include/framed_routing_bpf.h
+@@ -13,6 +13,7 @@ struct FramedRoutingKeyBPF {
+   u32 subnet;
+ };
+ 
++/*
+ static __always_inline u32
+ hash_framed_routing_key(struct FramedRoutingKeyBPF* key) {
+   u32 hash = 17;
+@@ -20,6 +21,7 @@ hash_framed_routing_key(struct FramedRoutingKeyBPF* key) {
+   hash     = hash ^ key->subnet;
+   return hash;
+ }
++*/
+ 
+ static __always_inline struct FramedRoutingKeyBPF
+ framed_routing_key_for_ip_cidr(u32 ip, u32 cidr) {
+diff --git a/src/upf_app/kernel/xdp/xdp_pdr_match_kern.c b/src/upf_app/kernel/xdp/xdp_pdr_match_kern.c
+index dc2dde6..29024fe 100644
+--- a/src/upf_app/kernel/xdp/xdp_pdr_match_kern.c
++++ b/src/upf_app/kernel/xdp/xdp_pdr_match_kern.c
+@@ -340,13 +340,11 @@ static __always_inline struct pfcp_pdr* match_pdr_n6(
+     /* Retrieve UE IP from PDI */
+     u32 ipaddr = bpf_htonl(pdi.ue_ip_address.ipv4_address.s_addr);
+ 
+-    /* UE IP Address must match for DL */
++    /* UE IP Address must match for DL.
++     * Framed-Route destinations (RFC 2865) are handled upstream in
++     * session_lookup_ip, which rewrites pctx->ue_ip to the owning UE's IP
++     * before this stage — so an exact match here is correct in that case too. */
+     if (ipaddr != pkt_ue_ip) continue;
+-    /* Check UE IP */
+-    /* TODO:
+-     * Check if this is correct
+-     * in case of framed_routing
+-     */
+ 
+     /* Source Interface must be CORE (N6) */
+     u32 source_interface = pdi.source_interface.interface_value;
+diff --git a/src/upf_app/kernel/xdp/xdp_session_lookup_ip_kern.c b/src/upf_app/kernel/xdp/xdp_session_lookup_ip_kern.c
+index 0c9ca65..99f7d84 100644
+--- a/src/upf_app/kernel/xdp/xdp_session_lookup_ip_kern.c
++++ b/src/upf_app/kernel/xdp/xdp_session_lookup_ip_kern.c
+@@ -26,10 +26,60 @@
+ #include "utils/types.h"
+ 
+ #include "pipeline_maps.h"
++#include "framed_routing_bpf.h"
+ #include "tail_call_dispatcher.h"
+ #include "stats_maps.h"
+ #include "stats_types.h"
+ 
++/* ========================================================================== */
++/*                    FRAMED ROUTING FALLBACK (RFC 2865 Framed-Route)         */
++/* ========================================================================== */
++
++/**
++ * @brief Resolve a downlink destination behind a UE to its owning session.
++ *
++ * For downlink traffic the destination IP is normally the UE's own address.
++ * With Framed-Route (RFC 2865 / TS 29.061) the destination may instead be an
++ * address inside a subnet routed *behind* the UE, which is not a key in
++ * session_by_ue_ip_map. When framed routing is enabled we look the destination
++ * prefix up in m_framed_route_mapping (populated by the control plane, keyed by
++ * hash of the framed prefix) to recover the owning UE IP, then retry the
++ * session lookup with that UE IP.
++ *
++ * Byte-order contract (host-order numeric throughout, matching pctx->ue_ip =
++ * bpf_ntohl(daddr) and the userspace populate): the prefix mask/hash and the
++ * stored UE IP are all host-order numeric.
++ *
++ * @param ue_ip_inout in: DL destination IP (host order); out: resolved UE IP
++ * @return matching session, or NULL if not a framed destination
++ */
++static __always_inline struct session_id* resolve_framed_session(
++    u32* ue_ip_inout) {
++  u8 flag_key    = 0;
++  u8* fr_enabled = bpf_map_lookup_elem(&framed_routing_flag, &flag_key);
++  if (!fr_enabled || !*fr_enabled) return NULL;
++
++  const u32 dst = *ue_ip_inout; /* host-order destination IP */
++
++  /* Longest-prefix-first (/32 .. /1), mirroring the userspace insert order. */
++#pragma clang loop unroll(full)
++  for (int i = 0; i < 32; i++) {
++    u32 cidr = 32 - i; /* 32 .. 1 — never 0, so the mask shift stays < 32 */
++
++    struct FramedRoutingKeyBPF key = framed_routing_key_for_ip_cidr(dst, cidr);
++    u32* real_ue_ip = bpf_map_lookup_elem(&m_framed_route_mapping, &key);
++    if (!real_ue_ip) continue;
++
++    struct session_id* s =
++        bpf_map_lookup_elem(&session_by_ue_ip_map, real_ue_ip);
++    if (s) {
++      *ue_ip_inout = *real_ue_ip;
++      return s;
++    }
++  }
++  return NULL;
++}
++
+ /* ========================================================================== */
+ /*                    PFCP SESSION LOOKUP (IP PDU)                            */
+ /* ========================================================================== */
+@@ -61,11 +111,19 @@ int session_lookup_ip(struct xdp_md* ctx) {
+       bpf_map_lookup_elem(&session_by_ue_ip_map, &ue_ip);
+ 
+   if (!session) {
+-    bpf_debug(
+-        "PFCP Session Lookup failed: no session for "
+-        "UE IP %pI4",
+-        &ue_ip);
+-    return xdp_stats_record_action(ctx, XDP_PASS);
++    /* Not a UE address — try a Framed-Route destination behind a UE. */
++    session = resolve_framed_session(&ue_ip);
++    if (!session) {
++      bpf_debug(
++          "PFCP Session Lookup failed: no session for "
++          "UE IP %pI4",
++          &ue_ip);
++      return xdp_stats_record_action(ctx, XDP_PASS);
++    }
++    /* Rewrite ue_ip so the downstream PDR-match stage matches the owning
++     * UE's PDR (its PDI UE IP), per the resolved framed route. */
++    pctx->ue_ip = ue_ip;
++    bpf_debug("Framed route resolved to UE IP %pI4", &ue_ip);
+   }
+ 
+   u64 seid    = session->seid;
+diff --git a/src/upf_app/simpleswitch/CMakeLists.txt b/src/upf_app/simpleswitch/CMakeLists.txt
+index dd60392..250b6fa 100644
+--- a/src/upf_app/simpleswitch/CMakeLists.txt
++++ b/src/upf_app/simpleswitch/CMakeLists.txt
+@@ -11,7 +11,7 @@ include_directories(${SRC_TOP_DIR}/upf_app)
+ include_directories(${SRC_TOP_DIR}/upf_app/app)
+ include_directories(${SRC_TOP_DIR}/upf_app/control)
+ include_directories(${SRC_TOP_DIR}/upf_app/kernel)
+-#include_directories(${SRC_TOP_DIR}/upf_app/kernel/include)
++include_directories(${SRC_TOP_DIR}/upf_app/kernel/include)
+ #include_directories(${SRC_TOP_DIR}/upf_app/include)
+ include_directories(${SRC_TOP_DIR}/upf_app/simpleswitch)
+ include_directories(${SRC_TOP_DIR}/udp) 
+@@ -23,7 +23,6 @@ include_directories(${SRC_TOP_DIR}/${MOUNTED_COMMON}/pfcp)
+ include_directories(${SRC_TOP_DIR}/${MOUNTED_COMMON}/utils)
+ include_directories(${SRC_TOP_DIR}/${MOUNTED_COMMON}/utils/bstr)
+ include_directories(${SRC_TOP_DIR}/${MOUNTED_COMMON}/model)
+-include_directories(${SRC_TOP_DIR}/upf_app/framed_routing)
+ include(${SRC_TOP_DIR}/${MOUNTED_COMMON}/model/nrf_model.cmake)
+ 
+ add_library (SIMPLE_SWITCH STATIC
+@@ -36,7 +35,7 @@ add_library (SIMPLE_SWITCH STATIC
+   pfcp_session.cpp
+   pfcp_switch.cpp
+   simple_switch.cpp
+-  ${SRC_TOP_DIR}/upf_app/framed_routing/FramedRouting.cpp
+-  ${SRC_TOP_DIR}/upf_app/framed_routing/LocalRouting.cpp
++  FramedRouting.cpp
++  LocalRouting.cpp
+ )
+   
+diff --git a/src/upf_app/simpleswitch/FramedRouting.cpp b/src/upf_app/simpleswitch/FramedRouting.cpp
+new file mode 100644
+index 0000000..a3f06d9
+--- /dev/null
++++ b/src/upf_app/simpleswitch/FramedRouting.cpp
+@@ -0,0 +1,137 @@
++/*
++ * SPDX-License-Identifier: LicenseRef-CSSL-1.0
++ */
++
++#include "FramedRouting.hpp"
++#include "framed_routing_bpf.h"  // FramedRoutingKeyBPF, framed_routing_key_for_ip_cidr
++#include <utility>
++#include <sstream>
++#include <iostream>
++#include <upf_config.hpp>
++
++extern oai::config::upf_config upf_cfg;
++
++namespace fr {
++
++FramedRouting::FramedRouting(std::shared_ptr<LocalRouting> localRouting)
++    : localRouting(std::move(localRouting)) {}
++
++std::pair<uint32_t, uint32_t> FramedRouting::parseFramedRouteDest(
++    const pfcp::framed_route_s& framed_route_s) {
++  // RFC 2865 §5.22 Framed-Route text: "<dest>[/<len>] [<gateway>] [<metric>]".
++  // Take only the first whitespace-separated field (the destination); the
++  // operator>> stops at the first whitespace, so gateway/metric are dropped.
++  std::stringstream ss(framed_route_s.framed_route);
++  std::string dest;
++  ss >> dest;
++  if (dest.empty()) return {0, 0};
++  return extractIPCidr(dest);
++}
++
++void FramedRouting::addFramedRoute(
++    const uint32_t ue_ip, const pfcp::framed_route_s& framed_route_s) {
++  // One Framed-Route IE == one route (TS 29.244 §8.2.109).
++  const std::pair<uint32_t, uint32_t> ipCidr =
++      parseFramedRouteDest(framed_route_s);
++  if (ipCidr.second == 0) return;  // empty / unparseable / default route (/0)
++
++  const auto key          = createFramedRoutingKey(ipCidr);
++  const auto routing_info = createLocalRoutingInformation(ipCidr);
++  const auto snat_info    = createLocalSnatInformation(ipCidr);
++  this->KeyToIp.insert({key, ue_ip});
++  localRouting->add_route(routing_info);
++  localRouting->add_source_snat(snat_info);
++}
++
++uint32_t FramedRouting::retrieveUEIp(const uint32_t destination_ip) const {
++  for (uint32_t i = 32; i > 0; --i) {
++    FramedRoutingKey framedRoutingKey =
++        createFramedRoutingKey({destination_ip, i});
++
++    auto ip = this->KeyToIp.find(framedRoutingKey);
++
++    if (ip != KeyToIp.end()) {
++      return ip->second;
++    };
++  };
++  return 0;
++};
++
++void FramedRouting::remove_entry(uint32_t ue_ip) {
++  for (uint32_t i = 32; i > 0; --i) {
++    FramedRoutingKey framedRoutingKey = createFramedRoutingKey({ue_ip, i});
++    auto ip                           = this->KeyToIp.find(framedRoutingKey);
++    if (ip != KeyToIp.end()) {
++      this->KeyToIp.erase(ip);
++      this->localRouting->delete_route(ip->second);
++    };
++  };
++}
++
++std::pair<uint32_t, uint32_t> FramedRouting::extractIPCidr(
++    const std::string& fr_subnet) {
++  const char subnet_delimeter = '/';
++  std::string ipSubnet        = fr_subnet;
++  uint32_t ip                 = 0;
++  uint32_t cidr               = 0;
++
++  const std::string ip_substring =
++      ipSubnet.substr(0, ipSubnet.find(subnet_delimeter));
++  ip = framedIPToUeIP(ip_substring);
++
++  std::reverse(ipSubnet.begin(), ipSubnet.end());
++  std::string subnet_substring =
++      ipSubnet.substr(0, ipSubnet.rfind(subnet_delimeter));
++  cidr = frameSubnetToUInt(subnet_substring);
++  return std::pair<uint32_t, uint32_t>{ip, cidr};
++}
++
++std::vector<FramedRoutingKeyBPF> FramedRouting::toBpfKeys(
++    const pfcp::framed_route_s& framed_route_s) {
++  // One Framed-Route IE == one route (TS 29.244 §8.2.109); return its single
++  // BPF key. host-order numeric prefix + CIDR — identical math to the XDP helper.
++  std::vector<FramedRoutingKeyBPF> keys;
++  const std::pair<uint32_t, uint32_t> ipCidr =
++      parseFramedRouteDest(framed_route_s);
++  if (ipCidr.second != 0) {
++    keys.push_back(framed_routing_key_for_ip_cidr(ipCidr.first, ipCidr.second));
++  }
++  return keys;
++}
++
++FramedRoutingKey FramedRouting::createFramedRoutingKey(
++    const std::pair<uint32_t, uint32_t> ipCidr) const {
++  const uint32_t ipv4Size      = 32;
++  const uint32_t subnet_adress = 0xffffffff << (ipv4Size - ipCidr.second);
++  const uint32_t networkAdress = subnet_adress & ipCidr.first;
++  return FramedRoutingKey{networkAdress, subnet_adress};
++}
++
++RoutingInformation FramedRouting::createLocalRoutingInformation(
++    const std::pair<uint32_t, uint32_t>& ipCidr) const {
++  struct in_addr addr;
++  addr.s_addr             = htonl(ipCidr.first);
++  std::string destination = inet_ntoa(addr);
++  uint32_t netmask        = ipCidr.second;
++  std::string device      = "tun0";
++  // todo (phine.tech) use correct DNN
++  struct in_addr address4_gw = {};
++  address4_gw.s_addr         = upf_cfg.pdns[0].network_ipv4.s_addr + be32toh(1);
++  std::string gateway_address = inet_ntoa(address4_gw);
++
++  return fr::RoutingInformation{destination, netmask, device, gateway_address};
++}
++
++SourceNatInformation FramedRouting::createLocalSnatInformation(
++    const std::pair<uint32_t, uint32_t>& ipCidr) const {
++  struct in_addr addr;
++  addr.s_addr              = htonl(ipCidr.first);
++  std::string destination  = inet_ntoa(addr);
++  uint32_t netmask         = ipCidr.second;
++  std::string device       = upf_cfg.n6.if_name;
++  std::string snat_address = oai::utils::conv::toString(upf_cfg.n6.addr4);
++
++  return SourceNatInformation{destination, netmask, device, snat_address};
++}
++
++}  // namespace fr
+\ No newline at end of file
+diff --git a/src/upf_app/simpleswitch/FramedRouting.hpp b/src/upf_app/simpleswitch/FramedRouting.hpp
+new file mode 100644
+index 0000000..66b3cb1
+--- /dev/null
++++ b/src/upf_app/simpleswitch/FramedRouting.hpp
+@@ -0,0 +1,107 @@
++/*
++ * SPDX-License-Identifier: LicenseRef-CSSL-1.0
++ */
++
++#pragma once
++
++#include <cstdint>
++#include <memory>
++#include <vector>
++#include "FramedRoutingHash.h"
++#include "pfcp_pdr.hpp"
++#include "LocalRouting.hpp"
++
++// Defined in the BPF header framed_routing_bpf.h (kernel/include). Only
++// forward-declared here so this widely-included header does not force every
++// consumer onto the BPF include path; the full type is pulled in by the .cpp
++// (FramedRouting.cpp) and by the BPF-datapath caller (SessionProgramManager).
++struct FramedRoutingKeyBPF;
++
++namespace fr {
++
++class FramedRouting {
++ public:
++  FramedRouting() = delete;
++
++  explicit FramedRouting(std::shared_ptr<LocalRouting> localRouting);
++
++  virtual ~FramedRouting() = default;
++
++  [[nodiscard]] uint32_t retrieveUEIp(const uint32_t destination_ip) const;
++
++  void addFramedRoute(
++      uint32_t ue_ip, const pfcp::framed_route_s& framed_route_s);
++
++  void remove_entry(uint32_t ue_ip);
++
++  [[nodiscard]] static uint32_t framedIPToUeIP(const std::string& ip) {
++    const char delimeter = '.';
++    uint32_t result      = 0;
++    int shift_counter    = 24;
++    std::string ip_temp;
++    for (auto i = 0; i < ip.length(); ++i) {
++      ip_temp += ip.at(i);
++      if (ip.at(i) == delimeter || i == ip.length() - 1) {
++        result  = result | (std::stoi(ip_temp) << shift_counter);
++        ip_temp = "";
++        shift_counter -= 8;
++      }
++    }
++    return result;
++  };
++
++  [[nodiscard]] static uint32_t frameSubnetToUInt(std::string& subnet) {
++    std::string temp_subnet = "";
++    if (subnet.length() > 2) {
++      return 32;
++    }
++    for (auto i = subnet.length(); i > 0; i--) {
++      temp_subnet.push_back(subnet.at(i - 1));
++    }
++    return std::stoi(temp_subnet);
++  };
++
++  [[nodiscard]] static std::pair<uint32_t, uint32_t> extractIPCidr(
++      const std::string& fr_subnet);
++
++  /**
++   * @brief Extract the destination prefix from an RFC 2865 Framed-Route value.
++   *
++   * Per 3GPP TS 29.244 §8.2.109 the Framed-Route IE carries the value part of
++   * the RFC 2865 Framed-Route AVP, whose text is
++   *   "<destination>[/<prefix-length>] [<gateway>] [<metric> ...]".
++   * Each IE describes exactly ONE route; a list of routes is a list of IEs.
++   * Only the destination field is significant for UPF routing — the gateway
++   * and metric are ignored (TS 29.244 §5.16 NOTE 7: routes are announced
++   * regardless of Framed-Routing). Returns {ip(host-order), cidr}, or {0,0}
++   * when empty/unparseable (prefix-length defaults to /32 if omitted).
++   */
++  [[nodiscard]] static std::pair<uint32_t, uint32_t> parseFramedRouteDest(
++      const pfcp::framed_route_s& framed_route_s);
++
++  /**
++   * @brief Parse a Framed-Route IE into its BPF-datapath keys.
++   *
++   * One key per whitespace-separated sub-route, host-order numeric — the exact
++   * value the XDP session-lookup fallback (resolve_framed_session) hashes. Used
++   * by the BPF datapath to populate m_framed_route_mapping. The simpleswitch
++   * datapath uses addFramedRoute()/LocalRouting instead.
++   */
++  [[nodiscard]] static std::vector<FramedRoutingKeyBPF> toBpfKeys(
++      const pfcp::framed_route_s& framed_route_s);
++
++ private:
++  std::shared_ptr<LocalRouting> localRouting;
++  std::unordered_map<FramedRoutingKey, uint32_t> KeyToIp{};
++
++  [[nodiscard]] FramedRoutingKey createFramedRoutingKey(
++      std::pair<uint32_t, uint32_t> ipCidr) const;
++
++  [[nodiscard]] RoutingInformation createLocalRoutingInformation(
++      const std::pair<uint32_t, uint32_t>& ipCidr) const;
++
++  [[nodiscard]] SourceNatInformation createLocalSnatInformation(
++      const std::pair<uint32_t, uint32_t>& ipCidr) const;
++};
++
++}  // namespace fr
+diff --git a/src/upf_app/simpleswitch/FramedRoutingHash.h b/src/upf_app/simpleswitch/FramedRoutingHash.h
+new file mode 100644
+index 0000000..beffe57
+--- /dev/null
++++ b/src/upf_app/simpleswitch/FramedRoutingHash.h
+@@ -0,0 +1,24 @@
++/*
++ * SPDX-License-Identifier: LicenseRef-CSSL-1.0
++ */
++
++#pragma once
++
++// todo(kw) maybe call it subnet or similar
++struct FramedRoutingKey {
++  uint32_t networkAdress{};
++  uint32_t subnet{};
++
++  bool operator==(const FramedRoutingKey& other) const {
++    return (networkAdress == other.networkAdress && subnet == other.subnet);
++  }
++};
++
++template<>
++struct std::hash<FramedRoutingKey> {
++  std::size_t operator()(const FramedRoutingKey& k) const {
++    std::size_t hash = 17;
++    hash *= std::hash<uint32_t>()(k.networkAdress);
++    return hash ^ std::hash<uint32_t>()(k.subnet);
++  }
++};
+\ No newline at end of file
+diff --git a/src/upf_app/simpleswitch/LocalRouting.cpp b/src/upf_app/simpleswitch/LocalRouting.cpp
+new file mode 100644
+index 0000000..9a26954
+--- /dev/null
++++ b/src/upf_app/simpleswitch/LocalRouting.cpp
+@@ -0,0 +1,71 @@
++/*
++ * SPDX-License-Identifier: LicenseRef-CSSL-1.0
++ */
++
++#include <fmt/format.h>
++#include <arpa/inet.h>
++#include <iostream>
++#include <logger.hpp>
++#include "LocalRouting.hpp"
++
++namespace fr {
++
++void LocalRouting::add_route(const RoutingInformation& routing_information) {
++  auto original_cerr_streambuf = std::cerr.rdbuf(nullptr);
++  auto cmd                     = fmt::format(
++      "ip route add {}/{} via {} dev tun0", routing_information.destination,
++      routing_information.netmask, routing_information.gateway_address);
++  auto rc = system((const char*) cmd.c_str());
++  if (rc == 0) {
++    Logger::pfcp_switch().info("Route created");
++    this->routeInfoToRtEntry.insert(
++        {routing_information.destination, routing_information});
++  } else {
++    Logger::pfcp_switch().warn("Route information not correct or does exists!");
++  }
++}
++
++void LocalRouting::delete_route(const uint32_t& network_address) {
++  // todo(phine.tech) create function remove dublicated_code
++  auto original_cerr_streambuf = std::cerr.rdbuf(nullptr);
++  std::string destination      = convert_s_addr_to_string(network_address);
++  auto routing_info_iterator   = this->routeInfoToRtEntry.find(destination);
++  if (routing_info_iterator != routeInfoToRtEntry.end()) {
++    const auto routing_information = routing_info_iterator->second;
++    auto cmd                       = fmt::format(
++        "ip route del {}/{} via {} dev tun0", routing_information.destination,
++        routing_information.netmask, routing_information.gateway_address);
++    const auto rc = system((const char*) cmd.c_str());
++    if (rc == 0) {
++      Logger::pfcp_switch().info("Route deleted");
++    } else {
++      Logger::pfcp_switch().warn(
++          "Route information not correct or does not exists!");
++    }
++  }
++};
++
++void LocalRouting::add_source_snat(
++    const SourceNatInformation& source_nat_information) {
++  const std::string cmd = fmt::format(
++      "iptables -t nat -A POSTROUTING -s {}/{} -o {} -j SNAT --to "
++      "{}",
++      source_nat_information.destination, source_nat_information.netmask,
++      source_nat_information.device, source_nat_information.snat_address);
++  const auto rc = system((const char*) cmd.c_str());
++  if (rc == 0) {
++    Logger::pfcp_switch().info("Source NAT added");
++  } else {
++    Logger::pfcp_switch().warn("Source NAT not correct or does exists!");
++  }
++}
++
++void LocalRouting::delete_ssnat(const uint32_t& network_address) {}
++
++std::string LocalRouting::convert_s_addr_to_string(
++    const uint32_t& network_address) {
++  struct in_addr addr;
++  addr.s_addr = htonl(network_address);
++  return inet_ntoa(addr);
++}
++}  // namespace fr
+\ No newline at end of file
+diff --git a/src/upf_app/simpleswitch/LocalRouting.hpp b/src/upf_app/simpleswitch/LocalRouting.hpp
+new file mode 100644
+index 0000000..059bd8a
+--- /dev/null
++++ b/src/upf_app/simpleswitch/LocalRouting.hpp
+@@ -0,0 +1,44 @@
++/*
++ * SPDX-License-Identifier: LicenseRef-CSSL-1.0
++ */
++
++#pragma once
++
++#include <memory>
++#include <string>
++#include <unordered_map>
++
++namespace fr {
++struct RoutingInformation {
++  std::string destination;
++  uint32_t netmask = 0;
++  std::string device;
++  std::string gateway_address;
++};
++
++struct SourceNatInformation {
++  std::string destination;
++  uint32_t netmask = 0;
++  std::string device;
++  std::string snat_address;
++};
++// todo (kw) rename class
++class LocalRouting {
++ public:
++  virtual void add_route(const RoutingInformation& routing_information);
++
++  virtual void delete_route(const uint32_t& network_address);
++
++  virtual void add_source_snat(
++      const SourceNatInformation& source_nat_information);
++
++  // todo(phine.tech) implement delete if needed
++  virtual void delete_ssnat(const uint32_t& network_address);
++
++ private:
++  std::unordered_map<std::string, RoutingInformation> routeInfoToRtEntry{};
++
++  std::string convert_s_addr_to_string(const uint32_t& network_address);
++};
++
++}  // namespace fr
+diff --git a/src/upf_app/simpleswitch/pfcp_pdr.hpp b/src/upf_app/simpleswitch/pfcp_pdr.hpp
+index 71bc87b..1fd05a5 100644
+--- a/src/upf_app/simpleswitch/pfcp_pdr.hpp
++++ b/src/upf_app/simpleswitch/pfcp_pdr.hpp
+@@ -10,8 +10,7 @@
+ #include <memory>
+ #include <mutex>
+ #include "endpoint.hpp"
+-#include "msg_pfcp.hpp"  // must precede FramedRouting.hpp (pfcp::framed_route_s)
+-#include "framed_routing/FramedRouting.hpp"
++#include "msg_pfcp.hpp"
+ 
+ namespace pfcp {
+ 
+diff --git a/src/upf_app/simpleswitch/pfcp_session.hpp b/src/upf_app/simpleswitch/pfcp_session.hpp
+index f1c5ee0..8d1e2b2 100644
+--- a/src/upf_app/simpleswitch/pfcp_session.hpp
++++ b/src/upf_app/simpleswitch/pfcp_session.hpp
+@@ -6,8 +6,7 @@
+ #define FILE_PFCP_SESSION_HPP_SEEN
+ 
+ #include "3gpp_29.244.h"
+-#include "msg_pfcp.hpp"  // must precede FramedRouting.hpp (pfcp::framed_route_s)
+-#include "framed_routing/FramedRouting.hpp"
++#include "msg_pfcp.hpp"
+ #include "pfcp_bar.hpp"
+ #include "pfcp_far.hpp"
+ #include "pfcp_mar.hpp"
+diff --git a/src/upf_app/simpleswitch/pfcp_switch.hpp b/src/upf_app/simpleswitch/pfcp_switch.hpp
+index 1b63f19..ebf9647 100644
+--- a/src/upf_app/simpleswitch/pfcp_switch.hpp
++++ b/src/upf_app/simpleswitch/pfcp_switch.hpp
+@@ -17,8 +17,8 @@
+ #include <variant>
+ #include <vector>
+ 
+-#include "framed_routing/FramedRouting.hpp"
+-#include "framed_routing/LocalRouting.hpp"
++#include "FramedRouting.hpp"
++#include "LocalRouting.hpp"
+ //#include "concurrentqueue.h"
+ #include "itti.hpp"
+ #include "itti_msg_n4.hpp"
+diff --git a/src/upf_app/user/upf_xdp_user.cpp b/src/upf_app/user/upf_xdp_user.cpp
+index 89a29cc..71bd8c4 100644
+--- a/src/upf_app/user/upf_xdp_user.cpp
++++ b/src/upf_app/user/upf_xdp_user.cpp
+@@ -688,8 +688,8 @@ void UPF_XDPProgram::UpdateFramedRouteMappingMap(
+     uint32_t ue_ip, FramedRoutingKeyBPF key) {
+   auto m = GetFramedRouteMappingMap();
+   if (m) {
+-    uint32_t k = hash_framed_routing_key(&key);
+-    m->Update(k, ue_ip, BPF_ANY);
++    // Keyed by the exact (network, mask) struct — no hashing, no collisions.
++    m->Update(key, ue_ip, BPF_ANY);
+   }
+ }
+ 
+@@ -697,9 +697,8 @@ void UPF_XDPProgram::UpdateFramedRouteMappingMap(
+ void UPF_XDPProgram::RemoveFramedRoute(FramedRoutingKeyBPF key) {
+   auto m = GetFramedRouteMappingMap();
+   if (m) {
+-    uint32_t k = hash_framed_routing_key(&key);
+     uint32_t v;
+-    if (m->Lookup(k, &v) == 0) m->Remove(k);
++    if (m->Lookup(key, &v) == 0) m->Remove(key);
+   }
+ }
+ 
