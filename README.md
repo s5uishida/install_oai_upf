@@ -37,8 +37,8 @@ This briefly describes the steps and configuration to build and install [OAI-CN5
   - [Build and Install OAI-CN5G-UPF](#build_install)
 - [Setup OAI-CN5G-UPF on VM-UP](#setup_up)
   - [Create configuration file](#conf)
-    - [Changes in the configuration file for Simple Switch mode](#ss_conf)
     - [Enable Framed Routing in eBPF/XDP or Simple Switch mode](#fr)
+    - [Changes in the configuration file for Simple Switch mode](#ss_conf)
     - [Prevent performance degradation in Simple Switch mode](#performance)
     - [Network settings in Simple Switch mode](#network_settings)
 - [Run OAI-CN5G-UPF on VM-UP](#run)
@@ -392,25 +392,6 @@ nfs:
       interface_name: ens21
 ```
 
-<a id="ss_conf"></a>
-
-#### Changes in the configuration file for Simple Switch mode
-
-When running UPF in Simple Switch mode instead of eBPF/XDP mode, change the configuration file as follows.
-```diff
---- config.yaml.orig    2026-03-29 11:05:01.752349449 +0900
-+++ config.yaml 2026-03-29 11:14:34.508818868 +0900
-@@ -48,7 +48,7 @@
- 
- upf:
-   support_features:
--    enable_bpf_datapath: yes
-+    enable_bpf_datapath: no
-     enable_qos: yes
-     enable_urr: no
-     enable_bar: no
-```
-
 <a id="fr"></a>
 
 #### Enable Framed Routing in eBPF/XDP or Simple Switch mode
@@ -428,6 +409,25 @@ To enable Framed Routing in eBPF/XDP or Simple Switch mode, change the configura
      enable_eth_pdu: no
    remote_n6_gw: 192.168.16.152
    upf_info:
+```
+
+<a id="ss_conf"></a>
+
+#### Changes in the configuration file for Simple Switch mode
+
+When running UPF in Simple Switch mode instead of eBPF/XDP mode, change the configuration file as follows.
+```diff
+--- config.yaml.orig    2026-03-29 11:05:01.752349449 +0900
++++ config.yaml 2026-03-29 11:14:34.508818868 +0900
+@@ -48,7 +48,7 @@
+ 
+ upf:
+   support_features:
+-    enable_bpf_datapath: yes
++    enable_bpf_datapath: no
+     enable_qos: yes
+     enable_urr: no
+     enable_bar: no
 ```
 
 <a id="performance"></a>
