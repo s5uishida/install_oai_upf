@@ -40,7 +40,7 @@ This briefly describes the steps and configuration to build and install [OAI-CN5
     - [Enable Framed Routing in eBPF/XDP or Simple Switch mode](#fr)
     - [Change to Simple Switch mode](#ss_conf)
     - [Prevent performance degradation in Simple Switch mode](#performance)
-    - [Network settings in Simple Switch mode](#network_settings)
+  - [Network settings in Simple Switch mode](#network_settings)
 - [Run OAI-CN5G-UPF on VM-UP](#run)
 - [Setup Data Network Gateway on VM-DN](#setup_dn)
 - [How to capture packets on DPDK ports](#pcap)
@@ -444,7 +444,7 @@ log_level:
 
 <a id="network_settings"></a>
 
-#### Network settings in Simple Switch mode
+### Network settings in Simple Switch mode
 
 Uncomment the next line in `/etc/sysctl.conf` and reflect it in the OS.
 ```
