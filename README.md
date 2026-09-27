@@ -6,12 +6,14 @@ This briefly describes the steps and configuration to build and install [OAI-CN5
 **Note. According to [this](https://github.com/orgs/openairinterface/discussions/3), OAI CN codebase has reportedly migrated from [GitLab](https://gitlab.eurecom.fr/oai/cn5g) to [GitHub](https://github.com/openairinterface).**
 
 **In my environment,** when try to make OAI-CN5G-UPF work with Open5GS or free5GC C-Plane, the results of a simple operation confirmation were as follows.
-| UPF mode | Open5GS | free5GC |
-| --- | --- | --- |
-| Simple Switch | OK **[1]** | NG |
-| eBPF/XDP | OK | OK |
+| UPF mode | Generation | Open5GS | free5GC |
+| --- | --- | --- | --- |
+| Simple Switch | 4G | OK | N/A |
+| | 5G | OK **[1]** | NG |
+| eBPF/XDP **[2]** | 5G | OK | OK |
 1. In N3 downlink packets from OAI-CN5G-UPF to gNodeB, the QFI of PDU session container in GTP-U extension header may be 0. In this case, for example, the gNodeB of srsRAN_Project seems to drop such packets. In my environment, the issue has not been solved yet.  
    Also, the gNodeBs of UERANSIM and PacketRusher seem to not drop downlink packets with QFI=0.
+2. In uplink packets, the QFI is mandatory in PDU Session Container within GTP-U extension header. Therefore, it does not support 4G.
 
 ---
 
