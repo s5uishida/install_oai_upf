@@ -1,3 +1,7 @@
+This patch has been modified based on the following commit.
+
+https://github.com/openairinterface/oai-cn5g-upf/commit/3dab3dcde9a559cd76042a4809c14505b7b50f48
+
 diff -urN oai-cn5g-upf.orig/build/scripts/build_helper.upf oai-cn5g-upf/build/scripts/build_helper.upf
 --- oai-cn5g-upf.orig/build/scripts/build_helper.upf	2026-05-31 13:20:37.000000000 +0900
 +++ oai-cn5g-upf/build/scripts/build_helper.upf	2026-05-31 14:13:08.573036204 +0900
