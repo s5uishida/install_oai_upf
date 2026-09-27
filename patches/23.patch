@@ -1,3 +1,7 @@
+This patch was created from a pull request in the oai-cn5g-upf repository as follows.
+
+wget https://github.com/openairinterface/oai-cn5g-upf/pull/23.diff -O 23.patch
+
 diff --git a/src/oai_upf/CMakeLists.txt b/src/oai_upf/CMakeLists.txt
 index 470c854..13e0981 100644
 --- a/src/oai_upf/CMakeLists.txt
