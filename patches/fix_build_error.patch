@@ -1,3 +1,7 @@
+This patch includes the following file.
+
+https://github.com/openairinterface/oai-cn5g-common-build/blob/ubuntu_24_support_test/installation/build_helper.fb_folly
+
 diff -urN oai-cn5g-upf.orig/build/common-build/installation/build_helper.fb_folly oai-cn5g-upf/build/common-build/installation/build_helper.fb_folly
 --- oai-cn5g-upf.orig/build/common-build/installation/build_helper.fb_folly	1970-01-01 09:00:00.000000000 +0900
 +++ oai-cn5g-upf/build/common-build/installation/build_helper.fb_folly	2026-09-19 17:49:32.014058853 +0900
