@@ -13,7 +13,7 @@ This briefly describes the steps and configuration to build and install [OAI-CN5
 | eBPF/XDP **[2]** | 5G | OK | OK |
 1. In N3 downlink packets from OAI-CN5G-UPF to gNodeB, the QFI of PDU session container in GTP-U extension header may be 0. In this case, for example, the gNodeB of srsRAN_Project seems to drop such packets. In my environment, the issue has not been solved yet.  
    Also, the gNodeBs of UERANSIM and PacketRusher seem to not drop downlink packets with QFI=0.
-2. In uplink packets, the QFI is mandatory in PDU Session Container within GTP-U extension header. Therefore, it does not support 4G.
+2. OAI-CN5G-UPF requires the QFI in PDU session container within GTP-U extension header for uplink packets. Therefore, it does not support 4G.
 
 ---
 
