@@ -47,6 +47,8 @@ This briefly describes the steps and configuration to build and install [OAI-CN5
 - [Setup Data Network Gateway on VM-DN](#setup_dn)
 - [How to capture packets on DPDK ports](#pcap)
 - [Sample Configurations](#sample_conf)
+  - [For 5G](#5g_conf)
+  - [For 4G](#4g_conf)
 - [Changelog (summary)](#changelog)
 
 ---
@@ -860,9 +862,19 @@ I would like to thank the excellent developers and all the contributors of OAI-C
 
 ## Sample Configurations
 
+<a id="5g_conf"></a>
+
+### For 5G
+
 - [Open5GS 5GC & UERANSIM UE / RAN Sample Configuration - OAI-CN5G-UPF(eBPF/XDP UPF)](https://github.com/s5uishida/open5gs_5gc_ueransim_oai_upf_sample_config)
 - [Open5GS 5GC & UERANSIM UE / RAN Sample Configuration - Framed Routing with OAI-CN5G-UPF](https://github.com/s5uishida/open5gs_5gc_ueransim_oai_upf_framed_routing_sample_config)
 - [free5GC 5GC & UERANSIM UE / RAN Sample Configuration - OAI-CN5G-UPF(eBPF/XDP UPF)](https://github.com/s5uishida/free5gc_ueransim_oai_upf_sample_config)
+
+<a id="4g_conf"></a>
+
+### For 4G
+
+- [Open5GS EPC & srsRAN_4G with ZeroMQ UE / RAN Sample Configuration - Framed Routing with OAI-CN5G-UPF(PGW-U)](https://github.com/s5uishida/open5gs_epc_srsran_oai_upf_framed_routing_sample_config)
 
 <a id="changelog"></a>
 
