@@ -874,6 +874,7 @@ I would like to thank the excellent developers and all the contributors of OAI-C
 
 ### For 4G
 
+- [Open5GS EPC & srsRAN_4G with ZeroMQ UE / RAN Sample Configuration - OAI-CN5G-UPF(PGW-U)](https://github.com/s5uishida/open5gs_epc_srsran_oai_upf_sample_config)
 - [Open5GS EPC & srsRAN_4G with ZeroMQ UE / RAN Sample Configuration - Framed Routing with OAI-CN5G-UPF(PGW-U)](https://github.com/s5uishida/open5gs_epc_srsran_oai_upf_framed_routing_sample_config)
 
 <a id="changelog"></a>
