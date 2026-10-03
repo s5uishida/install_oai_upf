@@ -30,7 +30,6 @@ This briefly describes the steps and configuration to build and install [OAI-CN5
   - [Install required packages](#install_pkg)
   - [Get patches](#get_patch)
   - [Clone OAI-CN5G-UPF](#clone)
-  - [Prepare to build on Ubuntu 24.04](#prepare_build_on_u24)
   - [Apply the patch to enable Framed Routing in eBPF/XDP mode](#apply_patch_fr)
   - [Apply the patches required for operation with Open5GS SMF](#apply_patch_open5gs)
   - [Build and Install OAI-CN5G-UPF](#build_install)
@@ -189,13 +188,6 @@ Finally, get the patch to use the PFCP request source port to the same local por
 # git checkout develop
 # git reset --hard 3ceb6942452a985af47e39007ebf82fb601fb9e0
 # git submodule update --init --recursive
-```
-
-<a id="prepare_build_on_u24"></a>
-
-### Prepare to build on Ubuntu 24.04
-
-```
 # cd ~/oai-cn5g-upf/build/common-build
 # git checkout develop
 # git reset --hard d813b9de40e1b40accf5a5764f8b40542d4047fb
