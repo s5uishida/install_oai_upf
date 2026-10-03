@@ -1,12 +1,7 @@
-This patch was created from a pull request in the oai-cn5g-upf repository as follows.
-
-wget https://github.com/openairinterface/oai-cn5g-upf/pull/23.diff -O 23.patch
-
-diff --git a/src/oai_upf/CMakeLists.txt b/src/oai_upf/CMakeLists.txt
-index 470c854..13e0981 100644
---- a/src/oai_upf/CMakeLists.txt
-+++ b/src/oai_upf/CMakeLists.txt
-@@ -290,7 +290,6 @@ include_directories(${SRC_TOP_DIR}/upf_app/kernel/include)
+diff -urN oai-cn5g-upf.orig/src/oai_upf/CMakeLists.txt oai-cn5g-upf/src/oai_upf/CMakeLists.txt
+--- oai-cn5g-upf.orig/src/oai_upf/CMakeLists.txt	2026-10-03 17:04:51.929036246 +0900
++++ oai-cn5g-upf/src/oai_upf/CMakeLists.txt	2026-10-03 17:07:26.874319112 +0900
+@@ -290,7 +290,6 @@
  include_directories(${SRC_TOP_DIR}/upf_app/app)
  include_directories(${SRC_TOP_DIR}/upf_app/utils)
  include_directories(${SRC_TOP_DIR}/upf_app/simpleswitch)
@@ -14,11 +9,10 @@ index 470c854..13e0981 100644
  include_directories(${SRC_TOP_DIR}/${MOUNTED_COMMON}/3gpp)
  include_directories(${SRC_TOP_DIR}/${MOUNTED_COMMON}/common)
  include_directories(${SRC_TOP_DIR}/${MOUNTED_COMMON}/model)
-diff --git a/src/upf_app/CMakeLists.txt b/src/upf_app/CMakeLists.txt
-index d87fbfd..de52212 100644
---- a/src/upf_app/CMakeLists.txt
-+++ b/src/upf_app/CMakeLists.txt
-@@ -41,7 +41,6 @@ include_directories(${SRC_TOP_DIR}/upf_app/control)
+diff -urN oai-cn5g-upf.orig/src/upf_app/CMakeLists.txt oai-cn5g-upf/src/upf_app/CMakeLists.txt
+--- oai-cn5g-upf.orig/src/upf_app/CMakeLists.txt	2026-10-03 17:04:51.929036246 +0900
++++ oai-cn5g-upf/src/upf_app/CMakeLists.txt	2026-10-03 17:07:26.874319112 +0900
+@@ -41,7 +41,6 @@
  include_directories(${SRC_TOP_DIR}/upf_app/helpers)        # CmdRunner, SdfFilterParser, GetNicInformation, NextHopFinder
  include_directories(${SRC_TOP_DIR}/upf_app/simpleswitch)
  include_directories(${SRC_TOP_DIR}/upf_app/user)           # BPFProgram, *_xdp_user, qer_tc_user, pdr_match_user
@@ -26,19 +20,30 @@ index d87fbfd..de52212 100644
  
  # libbpf headers (bpf/*.h), installed by build_helper.upf (make install_headers)
  include_directories(${SRC_TOP_DIR}/../build/ext/libbpf/root/usr/include)
-diff --git a/src/upf_app/control/SessionProgramManager.cpp b/src/upf_app/control/SessionProgramManager.cpp
-index 9b5d137..b1a7fb8 100644
---- a/src/upf_app/control/SessionProgramManager.cpp
-+++ b/src/upf_app/control/SessionProgramManager.cpp
-@@ -30,6 +30,7 @@
+diff -urN oai-cn5g-upf.orig/src/upf_app/control/SessionProgramManager.cpp oai-cn5g-upf/src/upf_app/control/SessionProgramManager.cpp
+--- oai-cn5g-upf.orig/src/upf_app/control/SessionProgramManager.cpp	2026-10-03 17:04:51.933036338 +0900
++++ oai-cn5g-upf/src/upf_app/control/SessionProgramManager.cpp	2026-10-03 17:07:26.875319121 +0900
+@@ -31,12 +31,13 @@
  #include "pfcp_urr.hpp"
  #include "pfcp_bar.hpp"
  #include "pfcp_mar.hpp"
+-#include <pfcp_pdr.h>  // BPF PDR structure
+-#include <pfcp_far.h>  // BPF FAR structure
+-#include <pfcp_qer.h>  // BPF QER structure
+-#include <pfcp_urr.h>  // BPF URR structure
+-#include <pfcp_bar.h>  // BPF BAR structure
+-#include <pfcp_mar.h>  // BPF MAR structure
 +#include "FramedRouting.hpp"  // fr::FramedRouting::toBpfKeys (framed routing)
- #include <pfcp_pdr.h>  // BPF PDR structure
- #include <pfcp_far.h>  // BPF FAR structure
- #include <pfcp_qer.h>  // BPF QER structure
-@@ -152,6 +153,13 @@ void SessionProgramManager::RemoveSession(uint64_t seid) {
++#include <pfcp_pdr.h>         // BPF PDR structure
++#include <pfcp_far.h>         // BPF FAR structure
++#include <pfcp_qer.h>         // BPF QER structure
++#include <pfcp_urr.h>         // BPF URR structure
++#include <pfcp_bar.h>         // BPF BAR structure
++#include <pfcp_mar.h>         // BPF MAR structure
+ #include <sdf_filter.h>
+ #include <eth_session_id.h>
+ #include <rules_enabled_flags.h>
+@@ -153,6 +154,13 @@
      if (bar_st_map) bar_st_map->Remove(seid);
      auto mar_map = upf_xdp_program->GetMapByName("mar_rules_map");
      if (mar_map) mar_map->Remove(seid);
@@ -52,11 +57,10 @@ index 9b5d137..b1a7fb8 100644
    }
  
    // Clean up ARP caches
-@@ -315,6 +323,39 @@ void SessionProgramManager::StorePduSessionInMap(
-   }
+@@ -317,6 +325,39 @@
  }
  
-+//------------------------------------------------------------------------------
+ //------------------------------------------------------------------------------
 +void SessionProgramManager::InstallFramedRoutes(
 +    std::shared_ptr<UPF_XDPProgram> upf_xdp_program, uint64_t seid,
 +    uint32_t ue_ip_s_addr, const std::shared_ptr<pfcp::pfcp_pdr>& pdr) {
@@ -89,10 +93,11 @@ index 9b5d137..b1a7fb8 100644
 +  }
 +}
 +
- //------------------------------------------------------------------------------
++//------------------------------------------------------------------------------
  /**
   * @brief Store ETH PDU session information in BPF map
-@@ -685,6 +726,15 @@ void SessionProgramManager::CreatePipeline(
+  *
+@@ -792,6 +833,15 @@
          StorePduSessionInMap(
              upf_xdp_program, ue_ip_address.ipv4_address.s_addr, fteid.teid, 0,
              seid);
@@ -108,10 +113,9 @@ index 9b5d137..b1a7fb8 100644
        }
  
        // Retrieve associated FAR
-diff --git a/src/upf_app/control/SessionProgramManager.h b/src/upf_app/control/SessionProgramManager.h
-index 2acfb6c..b6da708 100644
---- a/src/upf_app/control/SessionProgramManager.h
-+++ b/src/upf_app/control/SessionProgramManager.h
+diff -urN oai-cn5g-upf.orig/src/upf_app/control/SessionProgramManager.h oai-cn5g-upf/src/upf_app/control/SessionProgramManager.h
+--- oai-cn5g-upf.orig/src/upf_app/control/SessionProgramManager.h	2026-10-03 17:04:51.933036338 +0900
++++ oai-cn5g-upf/src/upf_app/control/SessionProgramManager.h	2026-10-03 17:07:26.875319121 +0900
 @@ -13,6 +13,8 @@
  #include <vector>
  #include <set>
@@ -121,11 +125,10 @@ index 2acfb6c..b6da708 100644
  // Forward declarations
  namespace pfcp {
  class pfcp_session;
-@@ -152,6 +154,19 @@ class SessionProgramManager {
-       std::shared_ptr<UPF_XDPProgram> xdp_program, uint32_t ue_ip,
+@@ -153,6 +155,19 @@
        uint32_t teid_dl, uint32_t teid_ul, uint64_t seid);
  
-+  /**
+   /**
 +   * @brief Install a downlink PDR's Framed-Routes into the BPF datapath.
 +   *
 +   * Maps each framed prefix carried by the PDR's PDI to the owning UE IP in
@@ -138,10 +141,11 @@ index 2acfb6c..b6da708 100644
 +      std::shared_ptr<UPF_XDPProgram> xdp_program, uint64_t seid,
 +      uint32_t ue_ip_s_addr, const std::shared_ptr<pfcp::pfcp_pdr>& pdr);
 +
-   /**
++  /**
     * @brief Store ETH PDU session information in BPF map
     *
-@@ -750,6 +765,8 @@ class SessionProgramManager {
+    * Updates eth_session_mapping_map with TEID -> eth_session_id mapping.
+@@ -786,6 +801,8 @@
    std::map<uint64_t, std::set<uint32_t>> session_n3_arp_cache_;
    /// Track PDU session type per SEID for cleanup and map routing
    std::map<uint64_t, PduSessionType> session_pdu_type_map_;
@@ -150,11 +154,10 @@ index 2acfb6c..b6da708 100644
  };
  
  #endif  // SESSION_PROGRAM_MANAGER_H_
-diff --git a/src/upf_app/control/UserPlaneComponent.cpp b/src/upf_app/control/UserPlaneComponent.cpp
-index 87113d2..5bfd2ec 100644
---- a/src/upf_app/control/UserPlaneComponent.cpp
-+++ b/src/upf_app/control/UserPlaneComponent.cpp
-@@ -66,7 +66,11 @@ PipelineFeatureFlags UserPlaneComponent::BuildFeatureFlags() const {
+diff -urN oai-cn5g-upf.orig/src/upf_app/control/UserPlaneComponent.cpp oai-cn5g-upf/src/upf_app/control/UserPlaneComponent.cpp
+--- oai-cn5g-upf.orig/src/upf_app/control/UserPlaneComponent.cpp	2026-10-03 17:04:51.933036338 +0900
++++ oai-cn5g-upf/src/upf_app/control/UserPlaneComponent.cpp	2026-10-03 17:07:26.875319121 +0900
+@@ -66,7 +66,11 @@
    // Multi-Access Rules (ATSSS steering)
    flags.enable_mar = bpf && upf::IsMarEnabled();
  
@@ -167,7 +170,7 @@ index 87113d2..5bfd2ec 100644
    flags.enable_framed_routing = bpf && upf::IsFramedRoutingEnabled();
  
    // PDU session type: select IP or ETH entry programs
-@@ -189,6 +193,9 @@ void UserPlaneComponent::Setup(
+@@ -189,6 +193,9 @@
        "  ├─ BAR Buffering     :  %s", flags.enable_bar ? "✓ on" : "✗ off");
    Logger::upf_app().info(
        "  ├─ MAR Steering      :  %s", flags.enable_mar ? "✓ on" : "✗ off");
@@ -177,11 +180,10 @@ index 87113d2..5bfd2ec 100644
    Logger::upf_app().info("  └─ Pipeline slots    :  %d", feature_count);
    Logger::upf_app().info("");
  
-diff --git a/src/upf_app/kernel/include/framed_routing_bpf.h b/src/upf_app/kernel/include/framed_routing_bpf.h
-index 4089ad3..4aad63c 100644
---- a/src/upf_app/kernel/include/framed_routing_bpf.h
-+++ b/src/upf_app/kernel/include/framed_routing_bpf.h
-@@ -13,6 +13,7 @@ struct FramedRoutingKeyBPF {
+diff -urN oai-cn5g-upf.orig/src/upf_app/kernel/include/framed_routing_bpf.h oai-cn5g-upf/src/upf_app/kernel/include/framed_routing_bpf.h
+--- oai-cn5g-upf.orig/src/upf_app/kernel/include/framed_routing_bpf.h	2026-10-03 17:04:51.935036384 +0900
++++ oai-cn5g-upf/src/upf_app/kernel/include/framed_routing_bpf.h	2026-10-03 17:07:26.875319121 +0900
+@@ -13,6 +13,7 @@
    u32 subnet;
  };
  
@@ -189,7 +191,7 @@ index 4089ad3..4aad63c 100644
  static __always_inline u32
  hash_framed_routing_key(struct FramedRoutingKeyBPF* key) {
    u32 hash = 17;
-@@ -20,6 +21,7 @@ hash_framed_routing_key(struct FramedRoutingKeyBPF* key) {
+@@ -20,6 +21,7 @@
    hash     = hash ^ key->subnet;
    return hash;
  }
@@ -197,33 +199,32 @@ index 4089ad3..4aad63c 100644
  
  static __always_inline struct FramedRoutingKeyBPF
  framed_routing_key_for_ip_cidr(u32 ip, u32 cidr) {
-diff --git a/src/upf_app/kernel/xdp/xdp_pdr_match_kern.c b/src/upf_app/kernel/xdp/xdp_pdr_match_kern.c
-index dc2dde6..29024fe 100644
---- a/src/upf_app/kernel/xdp/xdp_pdr_match_kern.c
-+++ b/src/upf_app/kernel/xdp/xdp_pdr_match_kern.c
-@@ -340,13 +340,11 @@ static __always_inline struct pfcp_pdr* match_pdr_n6(
+diff -urN oai-cn5g-upf.orig/src/upf_app/kernel/xdp/xdp_pdr_match_kern.c oai-cn5g-upf/src/upf_app/kernel/xdp/xdp_pdr_match_kern.c
+--- oai-cn5g-upf.orig/src/upf_app/kernel/xdp/xdp_pdr_match_kern.c	2026-10-03 17:04:51.941036522 +0900
++++ oai-cn5g-upf/src/upf_app/kernel/xdp/xdp_pdr_match_kern.c	2026-10-03 17:07:26.875319121 +0900
+@@ -340,13 +340,12 @@
      /* Retrieve UE IP from PDI */
      u32 ipaddr = bpf_htonl(pdi.ue_ip_address.ipv4_address.s_addr);
  
 -    /* UE IP Address must match for DL */
-+    /* UE IP Address must match for DL.
-+     * Framed-Route destinations (RFC 2865) are handled upstream in
-+     * session_lookup_ip, which rewrites pctx->ue_ip to the owning UE's IP
-+     * before this stage — so an exact match here is correct in that case too. */
-     if (ipaddr != pkt_ue_ip) continue;
+-    if (ipaddr != pkt_ue_ip) continue;
 -    /* Check UE IP */
 -    /* TODO:
 -     * Check if this is correct
 -     * in case of framed_routing
--     */
++    /* UE IP Address must match for DL.
++     * Framed-Route destinations (RFC 2865) are handled upstream in
++     * session_lookup_ip, which rewrites pctx->ue_ip to the owning UE's IP
++     * before this stage — so an exact match here is correct in that case too.
+      */
++    if (ipaddr != pkt_ue_ip) continue;
  
      /* Source Interface must be CORE (N6) */
      u32 source_interface = pdi.source_interface.interface_value;
-diff --git a/src/upf_app/kernel/xdp/xdp_session_lookup_ip_kern.c b/src/upf_app/kernel/xdp/xdp_session_lookup_ip_kern.c
-index 0c9ca65..99f7d84 100644
---- a/src/upf_app/kernel/xdp/xdp_session_lookup_ip_kern.c
-+++ b/src/upf_app/kernel/xdp/xdp_session_lookup_ip_kern.c
-@@ -26,10 +26,60 @@
+diff -urN oai-cn5g-upf.orig/src/upf_app/kernel/xdp/xdp_session_lookup_ip_kern.c oai-cn5g-upf/src/upf_app/kernel/xdp/xdp_session_lookup_ip_kern.c
+--- oai-cn5g-upf.orig/src/upf_app/kernel/xdp/xdp_session_lookup_ip_kern.c	2026-10-03 17:04:51.941036522 +0900
++++ oai-cn5g-upf/src/upf_app/kernel/xdp/xdp_session_lookup_ip_kern.c	2026-10-03 17:07:26.875319121 +0900
+@@ -26,11 +26,61 @@
  #include "utils/types.h"
  
  #include "pipeline_maps.h"
@@ -232,7 +233,7 @@ index 0c9ca65..99f7d84 100644
  #include "stats_maps.h"
  #include "stats_types.h"
  
-+/* ========================================================================== */
+ /* ========================================================================== */
 +/*                    FRAMED ROUTING FALLBACK (RFC 2865 Framed-Route)         */
 +/* ========================================================================== */
 +
@@ -281,10 +282,11 @@ index 0c9ca65..99f7d84 100644
 +  return NULL;
 +}
 +
- /* ========================================================================== */
++/* ========================================================================== */
  /*                    PFCP SESSION LOOKUP (IP PDU)                            */
  /* ========================================================================== */
-@@ -61,11 +111,19 @@ int session_lookup_ip(struct xdp_md* ctx) {
+ 
+@@ -61,11 +111,19 @@
        bpf_map_lookup_elem(&session_by_ue_ip_map, &ue_ip);
  
    if (!session) {
@@ -309,20 +311,19 @@ index 0c9ca65..99f7d84 100644
    }
  
    u64 seid    = session->seid;
-diff --git a/src/upf_app/simpleswitch/CMakeLists.txt b/src/upf_app/simpleswitch/CMakeLists.txt
-index dd60392..250b6fa 100644
---- a/src/upf_app/simpleswitch/CMakeLists.txt
-+++ b/src/upf_app/simpleswitch/CMakeLists.txt
-@@ -11,7 +11,7 @@ include_directories(${SRC_TOP_DIR}/upf_app)
- include_directories(${SRC_TOP_DIR}/upf_app/app)
+diff -urN oai-cn5g-upf.orig/src/upf_app/simpleswitch/CMakeLists.txt oai-cn5g-upf/src/upf_app/simpleswitch/CMakeLists.txt
+--- oai-cn5g-upf.orig/src/upf_app/simpleswitch/CMakeLists.txt	2026-10-03 17:04:51.941036522 +0900
++++ oai-cn5g-upf/src/upf_app/simpleswitch/CMakeLists.txt	2026-10-03 17:09:00.902023628 +0900
+@@ -12,7 +12,7 @@
  include_directories(${SRC_TOP_DIR}/upf_app/control)
  include_directories(${SRC_TOP_DIR}/upf_app/kernel)
+ include_directories(${OPENAIRCN_DIR}/build/upf/build/skel)
 -#include_directories(${SRC_TOP_DIR}/upf_app/kernel/include)
 +include_directories(${SRC_TOP_DIR}/upf_app/kernel/include)
  #include_directories(${SRC_TOP_DIR}/upf_app/include)
  include_directories(${SRC_TOP_DIR}/upf_app/simpleswitch)
  include_directories(${SRC_TOP_DIR}/udp) 
-@@ -23,7 +23,6 @@ include_directories(${SRC_TOP_DIR}/${MOUNTED_COMMON}/pfcp)
+@@ -24,7 +24,6 @@
  include_directories(${SRC_TOP_DIR}/${MOUNTED_COMMON}/utils)
  include_directories(${SRC_TOP_DIR}/${MOUNTED_COMMON}/utils/bstr)
  include_directories(${SRC_TOP_DIR}/${MOUNTED_COMMON}/model)
@@ -330,22 +331,20 @@ index dd60392..250b6fa 100644
  include(${SRC_TOP_DIR}/${MOUNTED_COMMON}/model/nrf_model.cmake)
  
  add_library (SIMPLE_SWITCH STATIC
-@@ -36,7 +35,7 @@ add_library (SIMPLE_SWITCH STATIC
-   pfcp_session.cpp
+@@ -38,7 +37,7 @@
    pfcp_switch.cpp
+   sdf_filter.cpp
    simple_switch.cpp
 -  ${SRC_TOP_DIR}/upf_app/framed_routing/FramedRouting.cpp
 -  ${SRC_TOP_DIR}/upf_app/framed_routing/LocalRouting.cpp
 +  FramedRouting.cpp
 +  LocalRouting.cpp
  )
-   
-diff --git a/src/upf_app/simpleswitch/FramedRouting.cpp b/src/upf_app/simpleswitch/FramedRouting.cpp
-new file mode 100644
-index 0000000..a3f06d9
---- /dev/null
-+++ b/src/upf_app/simpleswitch/FramedRouting.cpp
-@@ -0,0 +1,137 @@
+ 
+diff -urN oai-cn5g-upf.orig/src/upf_app/simpleswitch/FramedRouting.cpp oai-cn5g-upf/src/upf_app/simpleswitch/FramedRouting.cpp
+--- oai-cn5g-upf.orig/src/upf_app/simpleswitch/FramedRouting.cpp	1970-01-01 09:00:00.000000000 +0900
++++ oai-cn5g-upf/src/upf_app/simpleswitch/FramedRouting.cpp	2026-10-03 17:07:26.876319130 +0900
+@@ -0,0 +1,138 @@
 +/*
 + * SPDX-License-Identifier: LicenseRef-CSSL-1.0
 + */
@@ -437,7 +436,8 @@ index 0000000..a3f06d9
 +std::vector<FramedRoutingKeyBPF> FramedRouting::toBpfKeys(
 +    const pfcp::framed_route_s& framed_route_s) {
 +  // One Framed-Route IE == one route (TS 29.244 §8.2.109); return its single
-+  // BPF key. host-order numeric prefix + CIDR — identical math to the XDP helper.
++  // BPF key. host-order numeric prefix + CIDR — identical math to the XDP
++  // helper.
 +  std::vector<FramedRoutingKeyBPF> keys;
 +  const std::pair<uint32_t, uint32_t> ipCidr =
 +      parseFramedRouteDest(framed_route_s);
@@ -484,11 +484,38 @@ index 0000000..a3f06d9
 +
 +}  // namespace fr
 \ No newline at end of file
-diff --git a/src/upf_app/simpleswitch/FramedRouting.hpp b/src/upf_app/simpleswitch/FramedRouting.hpp
-new file mode 100644
-index 0000000..66b3cb1
---- /dev/null
-+++ b/src/upf_app/simpleswitch/FramedRouting.hpp
+diff -urN oai-cn5g-upf.orig/src/upf_app/simpleswitch/FramedRoutingHash.h oai-cn5g-upf/src/upf_app/simpleswitch/FramedRoutingHash.h
+--- oai-cn5g-upf.orig/src/upf_app/simpleswitch/FramedRoutingHash.h	1970-01-01 09:00:00.000000000 +0900
++++ oai-cn5g-upf/src/upf_app/simpleswitch/FramedRoutingHash.h	2026-10-03 17:07:26.876319130 +0900
+@@ -0,0 +1,24 @@
++/*
++ * SPDX-License-Identifier: LicenseRef-CSSL-1.0
++ */
++
++#pragma once
++
++// todo(kw) maybe call it subnet or similar
++struct FramedRoutingKey {
++  uint32_t networkAdress{};
++  uint32_t subnet{};
++
++  bool operator==(const FramedRoutingKey& other) const {
++    return (networkAdress == other.networkAdress && subnet == other.subnet);
++  }
++};
++
++template<>
++struct std::hash<FramedRoutingKey> {
++  std::size_t operator()(const FramedRoutingKey& k) const {
++    std::size_t hash = 17;
++    hash *= std::hash<uint32_t>()(k.networkAdress);
++    return hash ^ std::hash<uint32_t>()(k.subnet);
++  }
++};
+\ No newline at end of file
+diff -urN oai-cn5g-upf.orig/src/upf_app/simpleswitch/FramedRouting.hpp oai-cn5g-upf/src/upf_app/simpleswitch/FramedRouting.hpp
+--- oai-cn5g-upf.orig/src/upf_app/simpleswitch/FramedRouting.hpp	1970-01-01 09:00:00.000000000 +0900
++++ oai-cn5g-upf/src/upf_app/simpleswitch/FramedRouting.hpp	2026-10-03 17:07:26.876319130 +0900
 @@ -0,0 +1,107 @@
 +/*
 + * SPDX-License-Identifier: LicenseRef-CSSL-1.0
@@ -597,42 +624,9 @@ index 0000000..66b3cb1
 +};
 +
 +}  // namespace fr
-diff --git a/src/upf_app/simpleswitch/FramedRoutingHash.h b/src/upf_app/simpleswitch/FramedRoutingHash.h
-new file mode 100644
-index 0000000..beffe57
---- /dev/null
-+++ b/src/upf_app/simpleswitch/FramedRoutingHash.h
-@@ -0,0 +1,24 @@
-+/*
-+ * SPDX-License-Identifier: LicenseRef-CSSL-1.0
-+ */
-+
-+#pragma once
-+
-+// todo(kw) maybe call it subnet or similar
-+struct FramedRoutingKey {
-+  uint32_t networkAdress{};
-+  uint32_t subnet{};
-+
-+  bool operator==(const FramedRoutingKey& other) const {
-+    return (networkAdress == other.networkAdress && subnet == other.subnet);
-+  }
-+};
-+
-+template<>
-+struct std::hash<FramedRoutingKey> {
-+  std::size_t operator()(const FramedRoutingKey& k) const {
-+    std::size_t hash = 17;
-+    hash *= std::hash<uint32_t>()(k.networkAdress);
-+    return hash ^ std::hash<uint32_t>()(k.subnet);
-+  }
-+};
-\ No newline at end of file
-diff --git a/src/upf_app/simpleswitch/LocalRouting.cpp b/src/upf_app/simpleswitch/LocalRouting.cpp
-new file mode 100644
-index 0000000..9a26954
---- /dev/null
-+++ b/src/upf_app/simpleswitch/LocalRouting.cpp
+diff -urN oai-cn5g-upf.orig/src/upf_app/simpleswitch/LocalRouting.cpp oai-cn5g-upf/src/upf_app/simpleswitch/LocalRouting.cpp
+--- oai-cn5g-upf.orig/src/upf_app/simpleswitch/LocalRouting.cpp	1970-01-01 09:00:00.000000000 +0900
++++ oai-cn5g-upf/src/upf_app/simpleswitch/LocalRouting.cpp	2026-10-03 17:07:26.876319130 +0900
 @@ -0,0 +1,71 @@
 +/*
 + * SPDX-License-Identifier: LicenseRef-CSSL-1.0
@@ -706,11 +700,9 @@ index 0000000..9a26954
 +}
 +}  // namespace fr
 \ No newline at end of file
-diff --git a/src/upf_app/simpleswitch/LocalRouting.hpp b/src/upf_app/simpleswitch/LocalRouting.hpp
-new file mode 100644
-index 0000000..059bd8a
---- /dev/null
-+++ b/src/upf_app/simpleswitch/LocalRouting.hpp
+diff -urN oai-cn5g-upf.orig/src/upf_app/simpleswitch/LocalRouting.hpp oai-cn5g-upf/src/upf_app/simpleswitch/LocalRouting.hpp
+--- oai-cn5g-upf.orig/src/upf_app/simpleswitch/LocalRouting.hpp	1970-01-01 09:00:00.000000000 +0900
++++ oai-cn5g-upf/src/upf_app/simpleswitch/LocalRouting.hpp	2026-10-03 17:07:26.876319130 +0900
 @@ -0,0 +1,44 @@
 +/*
 + * SPDX-License-Identifier: LicenseRef-CSSL-1.0
@@ -756,10 +748,9 @@ index 0000000..059bd8a
 +};
 +
 +}  // namespace fr
-diff --git a/src/upf_app/simpleswitch/pfcp_pdr.hpp b/src/upf_app/simpleswitch/pfcp_pdr.hpp
-index 71bc87b..1fd05a5 100644
---- a/src/upf_app/simpleswitch/pfcp_pdr.hpp
-+++ b/src/upf_app/simpleswitch/pfcp_pdr.hpp
+diff -urN oai-cn5g-upf.orig/src/upf_app/simpleswitch/pfcp_pdr.hpp oai-cn5g-upf/src/upf_app/simpleswitch/pfcp_pdr.hpp
+--- oai-cn5g-upf.orig/src/upf_app/simpleswitch/pfcp_pdr.hpp	2026-10-03 17:04:51.942036545 +0900
++++ oai-cn5g-upf/src/upf_app/simpleswitch/pfcp_pdr.hpp	2026-10-03 17:11:11.397691434 +0900
 @@ -10,8 +10,7 @@
  #include <memory>
  #include <mutex>
@@ -767,15 +758,14 @@ index 71bc87b..1fd05a5 100644
 -#include "msg_pfcp.hpp"  // must precede FramedRouting.hpp (pfcp::framed_route_s)
 -#include "framed_routing/FramedRouting.hpp"
 +#include "msg_pfcp.hpp"
+ #include "qos_mbr.hpp"
+ #include "sdf_filter.hpp"
  
- namespace pfcp {
- 
-diff --git a/src/upf_app/simpleswitch/pfcp_session.hpp b/src/upf_app/simpleswitch/pfcp_session.hpp
-index f1c5ee0..8d1e2b2 100644
---- a/src/upf_app/simpleswitch/pfcp_session.hpp
-+++ b/src/upf_app/simpleswitch/pfcp_session.hpp
-@@ -6,8 +6,7 @@
- #define FILE_PFCP_SESSION_HPP_SEEN
+diff -urN oai-cn5g-upf.orig/src/upf_app/simpleswitch/pfcp_session.hpp oai-cn5g-upf/src/upf_app/simpleswitch/pfcp_session.hpp
+--- oai-cn5g-upf.orig/src/upf_app/simpleswitch/pfcp_session.hpp	2026-10-03 17:04:51.943036569 +0900
++++ oai-cn5g-upf/src/upf_app/simpleswitch/pfcp_session.hpp	2026-10-03 17:07:26.876319130 +0900
+@@ -11,8 +11,7 @@
+ #include <mutex>
  
  #include "3gpp_29.244.h"
 -#include "msg_pfcp.hpp"  // must precede FramedRouting.hpp (pfcp::framed_route_s)
@@ -784,10 +774,9 @@ index f1c5ee0..8d1e2b2 100644
  #include "pfcp_bar.hpp"
  #include "pfcp_far.hpp"
  #include "pfcp_mar.hpp"
-diff --git a/src/upf_app/simpleswitch/pfcp_switch.hpp b/src/upf_app/simpleswitch/pfcp_switch.hpp
-index 1b63f19..ebf9647 100644
---- a/src/upf_app/simpleswitch/pfcp_switch.hpp
-+++ b/src/upf_app/simpleswitch/pfcp_switch.hpp
+diff -urN oai-cn5g-upf.orig/src/upf_app/simpleswitch/pfcp_switch.hpp oai-cn5g-upf/src/upf_app/simpleswitch/pfcp_switch.hpp
+--- oai-cn5g-upf.orig/src/upf_app/simpleswitch/pfcp_switch.hpp	2026-10-03 17:04:51.944036591 +0900
++++ oai-cn5g-upf/src/upf_app/simpleswitch/pfcp_switch.hpp	2026-10-03 17:10:15.167430975 +0900
 @@ -17,8 +17,8 @@
  #include <variant>
  #include <vector>
@@ -796,14 +785,13 @@ index 1b63f19..ebf9647 100644
 -#include "framed_routing/LocalRouting.hpp"
 +#include "FramedRouting.hpp"
 +#include "LocalRouting.hpp"
- //#include "concurrentqueue.h"
+ // #include "concurrentqueue.h"
  #include "itti.hpp"
  #include "itti_msg_n4.hpp"
-diff --git a/src/upf_app/user/upf_xdp_user.cpp b/src/upf_app/user/upf_xdp_user.cpp
-index 89a29cc..71bd8c4 100644
---- a/src/upf_app/user/upf_xdp_user.cpp
-+++ b/src/upf_app/user/upf_xdp_user.cpp
-@@ -688,8 +688,8 @@ void UPF_XDPProgram::UpdateFramedRouteMappingMap(
+diff -urN oai-cn5g-upf.orig/src/upf_app/user/upf_xdp_user.cpp oai-cn5g-upf/src/upf_app/user/upf_xdp_user.cpp
+--- oai-cn5g-upf.orig/src/upf_app/user/upf_xdp_user.cpp	2026-10-03 17:04:51.948036684 +0900
++++ oai-cn5g-upf/src/upf_app/user/upf_xdp_user.cpp	2026-10-03 17:07:26.877319140 +0900
+@@ -688,8 +688,8 @@
      uint32_t ue_ip, FramedRoutingKeyBPF key) {
    auto m = GetFramedRouteMappingMap();
    if (m) {
@@ -814,7 +802,7 @@ index 89a29cc..71bd8c4 100644
    }
  }
  
-@@ -697,9 +697,8 @@ void UPF_XDPProgram::UpdateFramedRouteMappingMap(
+@@ -697,9 +697,8 @@
  void UPF_XDPProgram::RemoveFramedRoute(FramedRoutingKeyBPF key) {
    auto m = GetFramedRouteMappingMap();
    if (m) {
