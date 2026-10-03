@@ -130,7 +130,7 @@ I simply confirmed the operation of the following versions.
 | Repository / Branch | Commit & Date | Title |
 | --- | --- | --- |
 | oai-cn5g-upf /<br>develop | `3ceb6942452a985af47e39007ebf82fb601fb9e0`<br>2026.10.02 | [Merge pull request #33 from openairinterface/fix-tied-for-same-chid](https://github.com/openairinterface/oai-cn5g-upf/commit/3ceb6942452a985af47e39007ebf82fb601fb9e0) |
-| common-build /<br>develop | `d813b9de40e1b40accf5a5764f8b40542d4047fb`<br>2026.09.16 | [Merge pull request #3 from openairinterface/ubuntu-24-support-only](https://github.com/openairinterface/oai-cn5g-common-build/commit/d813b9de40e1b40accf5a5764f8b40542d4047fb) |
+| common-build / develop | `d813b9de40e1b40accf5a5764f8b40542d4047fb`<br>2026.09.16 | [Merge pull request #3 from openairinterface/ubuntu-24-support-only](https://github.com/openairinterface/oai-cn5g-common-build/commit/d813b9de40e1b40accf5a5764f8b40542d4047fb) |
 | common-src /<br>develop | `9cdc3efdc407a6df856adee4fb3a526b4e27320a`<br>2026.10.02 | [Merge pull request #15 from openairinterface/fix-type6-nas-ie-length-truncation](https://github.com/openairinterface/oai-cn5g-common-src/commit/9cdc3efdc407a6df856adee4fb3a526b4e27320a) |
 
 <a id="install_pkg"></a>
