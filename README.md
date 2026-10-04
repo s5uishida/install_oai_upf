@@ -6,7 +6,7 @@ This briefly describes the steps and configuration to build and install [OAI-CN5
 **Note. According to [this](https://github.com/orgs/openairinterface/discussions/3), OAI CN codebase has reportedly migrated from [GitLab](https://gitlab.eurecom.fr/oai/cn5g) to [GitHub](https://github.com/openairinterface).**
 
 **In my environment,** when try to make OAI-CN5G-UPF work with Open5GS or free5GC C-Plane, the results of a simple operation confirmation were as follows.
-| UPF mode | Generation | Open5GS | free5GC |
+| UPF mode | Generation | Open5GS [[2](#open5gs)] | free5GC |
 | --- | --- | --- | --- |
 | Simple Switch | 4G | OK | N/A |
 | | 5G | OK | NG |
