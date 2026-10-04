@@ -900,6 +900,7 @@ I would like to thank the excellent developers and all the contributors of OAI-C
   - Updated OAI-CN5G-UPF and OAI-CN5G-COMMON-SRC.
   - [Updated patch](https://github.com/s5uishida/install_oai_upf/blob/main/patches/23_mod.patch) based on [Feat: add framed routing feature. Initial contribution](https://github.com/openairinterface/oai-cn5g-upf/pull/23)
   - Deleted `Fix some build errors` patch and `Build on Ubuntu 24.04` patch.
+  - Added [Temporary workaround for connecting with Open5GS](#open5gs).
 - [2026.09.19] Updated as follows.
   - Updated OAI-CN5G-UPF, OAI-CN5G-COMMON-BUILD and OAI-CN5G-COMMON-SRC.
   - Added [Feat: add framed routing feature. Initial contribution](https://github.com/openairinterface/oai-cn5g-upf/pull/23) patch to to enable Framed Routing in eBPF/XDP mode.
