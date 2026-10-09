@@ -899,8 +899,7 @@ I would like to thank the excellent developers and all the contributors of OAI-C
 
 ## Changelog (summary)
 
-- [2026.10.09] Updated as follows.
-  - Updated OAI-CN5G-UPF and OAI-CN5G-COMMON-SRC.
+- [2026.10.09] Updated OAI-CN5G-UPF and OAI-CN5G-COMMON-SRC.
 - [2026.10.03] Updated as follows.
   - Updated OAI-CN5G-UPF and OAI-CN5G-COMMON-SRC.
   - [Updated patch](https://github.com/s5uishida/install_oai_upf/blob/main/patches/23_mod.patch) based on [Feat: add framed routing feature. Initial contribution](https://github.com/openairinterface/oai-cn5g-upf/pull/23)
